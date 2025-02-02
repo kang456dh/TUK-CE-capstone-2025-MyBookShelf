@@ -38,6 +38,19 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// Spring Boot 기본 Web 모듈 (RestTemplate, WebClient 포함)
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+	// WebClient를 위한 Reactor Netty
+	implementation 'io.projectreactor.netty:reactor-netty'
+
+	// JSON 처리 (Jackson 포함)
+	implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+	// 테스트 (JUnit 5)
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
 tasks.named('test') {
