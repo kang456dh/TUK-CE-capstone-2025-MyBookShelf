@@ -1,6 +1,6 @@
-package org.wsp.mybookshelf.global.api.service;
+package org.wsp.mybookshelf.global.searchApi.service;
 
-import org.wsp.mybookshelf.global.api.dto.BookResponse;
+import org.wsp.mybookshelf.global.searchApi.dto.BookResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;

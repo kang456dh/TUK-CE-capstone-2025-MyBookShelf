@@ -1,11 +1,9 @@
-package org.wsp.mybookshelf.global.api.service;
+package org.wsp.mybookshelf.global.searchApi.service;
 
-import org.wsp.mybookshelf.global.api.dto.BookResponse;
+import org.wsp.mybookshelf.global.searchApi.dto.BookResponse;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @Service
