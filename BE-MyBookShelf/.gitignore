@@ -1,3 +1,6 @@
+# Application properties
+application.properties
+
 # Java
 *.class
 *.jar
