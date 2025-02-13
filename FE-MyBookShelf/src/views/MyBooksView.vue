@@ -18,6 +18,7 @@
           @change="selectBookshelf"
           class="bookshelf-select"
         >
+          <option value="null" disabled>---------- 책장을 추가해주세요 ----------</option>
           <option
             v-for="(shelf, index) in bookshelves"
             :key="index"
@@ -26,12 +27,27 @@
             {{ shelf.name }}
           </option>
         </select>
-        <button @click="toggleRenameMode" class="rename-button">
+        <button @click="toggleRenameMode" class="rename-button" :disabled="isNoBookshelf">
           {{ isRenaming ? "저장" : "이름 변경" }}
         </button>
-        <button @click="addBookshelf" class="add-bookshelf-button">+</button>
-        <button @click="deleteBookshelf" class="delete-bookshelf-button">🗑</button>
-        <button @click="openSidebar" class="add-book-button">책 등록</button> <!-- 책 등록 버튼 -->
+        <button @click="openAddBookshelfModal" class="add-bookshelf-button" :disabled="isNoBookshelf">+</button>
+        <button @click="deleteBookshelf" class="delete-bookshelf-button" :disabled="isNoBookshelf">🗑</button>
+        <button @click="openSidebar" class="add-book-button" :disabled="currentBookshelf === null || currentBookshelf === '-'">책 등록</button>
+      </div>
+    </div>
+
+    <!-- 책장 추가 모달 -->
+    <div v-if="isAddBookshelfModalOpen" class="add-bookshelf-modal">
+      <div class="add-bookshelf-modal-content">
+        <label for="new-bookshelf-name">책장 이름</label>
+        <input
+          type="text"
+          id="new-bookshelf-name"
+          v-model="newBookshelfNameForModal"
+          placeholder="책장 이름 입력"
+        />
+        <button @click="addBookshelf" class="create-bookshelf-button">생성하기</button>
+        <button @click="closeAddBookshelfModal" class="close-modal-button">취소</button>
       </div>
     </div>
 
@@ -74,6 +90,26 @@
           <button @click="searchManual">검색</button>
         </div>
 
+        <!-- 검색된 책들 -->
+        <div v-if="searchResults.length" class="search-results">
+          <div class="book-grid">
+            <div
+              v-for="(book, index) in searchResults.slice(0, 6)"
+              :key="index"
+              class="search-book-item"
+            >
+              <div class="book-cover">
+                <img :src="book.cover" alt="책 표지" />
+              </div>
+              <div class="book-info">
+                <p class="book-title" :title="book.title">{{ book.title.length > 10 ? book.title.slice(0, 10) + '...' : book.title }}</p>
+                <p class="book-author">{{ book.author }}</p>
+                <p class="book-pages">쪽수: {{ book.pages }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- ISBN 등록 폼 -->
         <div v-if="registerType === 'isbn'" class="isbn-form">
           <label for="isbn">ISBN</label>
@@ -86,28 +122,41 @@
           <button @click="openFileInput" class="file-upload-button">첨부파일</button>
           <button @click="openCamera" class="camera-button">사진 촬영</button>
         </div>
+
+        <div class="sidebook-grid">
+          <div
+            v-for="book in books"
+            :key="book.id"
+            class="sidebook-item"
+            :class="{ selected: selectedBooks.includes(book) }"
+            @click="toggleSelection(book)"
+          >
+            <img :src="book.cover" alt="book cover" />
+            <p>{{ book.title }}</p>
+            <p>{{ book.author }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
-
 
 <script>
 export default {
   name: "MyBooksView",
   data() {
     return {
-      bookshelves: [
-        { name: "책장 1", books: Array(20).fill({ cover: null }) },
-      ],
-      currentBookshelf: "책장 1",
+      bookshelves: [], // 기본값은 빈 배열로 설정
+      currentBookshelf: null, // 기본값은 'null'로 설정
       isRenaming: false,
       newBookshelfName: "",
+      newBookshelfNameForModal: "", // 모달에 입력할 새 책장 이름
       isSidebarOpen: false,
       registerType: "manual",
       manualTitle: "",
       isbn: "",
-      isPhotoRegistrationOpen: false,  // 사진 등록 버튼 활성화
+      isAddBookshelfModalOpen: false, // 책장 추가 모달 열기 여부
+      searchResults: [], // 검색된 책 정보
     };
   },
   computed: {
@@ -120,6 +169,11 @@ export default {
   },
   methods: {
     toggleRenameMode() {
+      if (this.currentBookshelf === null) {
+        alert("책장을 먼저 선택해주세요.");
+        return;
+      }
+
       if (this.isRenaming) {
         const shelf = this.bookshelves.find(
           (shelf) => shelf.name === this.currentBookshelf
@@ -134,15 +188,29 @@ export default {
     selectBookshelf() {
       // 책장 변경 로직
     },
+    openAddBookshelfModal() {
+      this.isAddBookshelfModalOpen = true;
+    },
+    closeAddBookshelfModal() {
+      this.isAddBookshelfModalOpen = false;
+      this.newBookshelfNameForModal = "";
+    },
     addBookshelf() {
-      const newShelfName = `책장 ${this.bookshelves.length + 1}`;
-      this.bookshelves.push({ name: newShelfName, books: Array(20).fill({ cover: null }) });
+      if (!this.newBookshelfNameForModal) return;
+      const newShelfName = this.newBookshelfNameForModal;
+      this.bookshelves.push({ name: newShelfName, books: [] });
       this.currentBookshelf = newShelfName;
+      this.closeAddBookshelfModal();
     },
     deleteBookshelf() {
-      if (this.bookshelves.length === 1) {
+      if (this.bookshelves.length <= 1) {
         alert("최소 1개의 책장이 존재해야 합니다.");
         return; // 책장이 하나일 경우 삭제하지 않음
+      }
+
+      if (this.currentBookshelf === null) {
+        alert("책장을 먼저 선택해주세요.");
+        return;
       }
 
       this.bookshelves = this.bookshelves.filter(
@@ -151,7 +219,7 @@ export default {
       if (this.bookshelves.length > 0) {
         this.currentBookshelf = this.bookshelves[0].name;
       } else {
-        this.addBookshelf();
+        this.currentBookshelf = null; // 책장 없으면 리스트박스에 기본값 '-'
       }
     },
     openSidebar() {
@@ -166,18 +234,40 @@ export default {
       this.registerType = type;
     },
     searchManual() {
-      console.log("검색된 책 제목:", this.manualTitle);
+      // 알라딘 API로 책 제목 검색
+      fetch(`https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=YOUR_TTB_KEY&Query=${this.manualTitle}&SearchTarget=Book&MaxResults=10&output=js`)
+        .then(response => response.json())
+        .then(data => {
+          this.searchResults = data.aladinAPI.books.map(book => ({
+            title: book.title,
+            author: book.author,
+            publisher: book.publisher,
+            isbn: book.isbn,
+            cover: `https://image.aladin.co.kr/cover/large/${book.isbn}.jpg`
+          }));
+        })
+        .catch(error => {
+          console.error("책 검색 오류:", error);
+        });
     },
     searchISBN() {
-      console.log("검색된 ISBN:", this.isbn);
+      // ISBN을 이용하여 책 검색
+      fetch(`https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=YOUR_TTB_KEY&Query=${this.isbn}&SearchTarget=Book&MaxResults=10&output=js`)
+        .then(response => response.json())
+        .then(data => {
+          const book = data.aladinAPI.books[0];
+          this.searchResults = [{
+            title: book.title,
+            author: book.author,
+            publisher: book.publisher,
+            isbn: book.isbn,
+            cover: `https://image.aladin.co.kr/cover/large/${book.isbn}.jpg`
+          }];
+        })
+        .catch(error => {
+          console.error("ISBN 검색 오류:", error);
+        });
     },
-    
-    // 사진 등록 버튼 클릭 시
-    openPhotoRegistration() {
-      this.isPhotoRegistrationOpen = !this.isPhotoRegistrationOpen;
-    },
-
-    // 파일 첨부 버튼 클릭 시
     openFileInput() {
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
@@ -188,19 +278,14 @@ export default {
         const file = fileInput.files[0];
         if (file) {
           console.log("첨부된 파일:", file);
-          // 파일 처리 로직 추가
         }
       });
     },
-
-    // 사진 촬영 버튼 클릭 시
     openCamera() {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        // 모바일 환경에서 카메라 열기
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(() => {
             console.log("카메라가 열렸습니다.");
-            // 비디오 스트림을 화면에 표시하거나 처리할 로직을 여기에 추가 가능
           })
           .catch((err) => {
             console.error("카메라 연결 실패:", err);
@@ -209,10 +294,10 @@ export default {
         alert("모바일에서만 지원됩니다.");
       }
     },
-
   },
 };
 </script>
+
 
 <style scoped>
 .my-books {
@@ -307,7 +392,7 @@ export default {
   position: fixed;
   top: 0;
   right: 0;
-  width: 400px;
+  width: 50vw;
   height: 100%;
   background-color: #fff;
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
@@ -371,5 +456,160 @@ export default {
   padding: 5px;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+
+.add-bookshelf-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  padding: 20px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.add-bookshelf-modal-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.add-bookshelf-modal input {
+  margin-bottom: 30px;
+  padding: 5px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.create-bookshelf-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.create-bookshelf-button:hover {
+  background-color: #218838;
+}
+
+.close-modal-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-modal-button:hover {
+  background-color: #c82333;
+}
+
+/* 버튼을 나란히 배치 */
+.sidebar .registration-options {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.sidebar .registration-options button {
+  padding: 12px 24px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #ffffff;
+  transition: background-color 0.3s, border-color 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-grow: 1; /* 버튼들이 고르게 배치되도록 함 */
+}
+
+.sidebar .registration-options button:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+/* active 버튼에 스타일 추가 */
+.sidebar .registration-options button.active {
+  background-color: #4caf50;
+  color: white;
+  border-color: #45a049;
+}
+
+/* 비활성화된 버튼 색상 */
+.sidebar .registration-options button:not(.active):not(:disabled) {
+  background-color: #f0f0f0;
+  border-color: #ccc;
+  color: #888; /* 연한 회색 */
+}
+
+/* 비활성화된 버튼 상태 */
+.sidebar .registration-options button:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
+  border-color: #bbb;
+  color: #bbb; /* 연한 회색으로 글자 색상 */
+}
+
+/* input 및 버튼 스타일 */
+.sidebar .manual-form input,
+.sidebar .isbn-form input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.sidebar .file-upload-button,
+.sidebar .camera-button {
+  padding: 12px 24px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: block;
+  width: 100%;
+}
+
+.sidebar .file-upload-button:hover,
+.sidebar .camera-button:hover {
+  background-color: #1976d2;
+}
+
+.sidebook-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 한 줄에 3개씩 */
+  gap: 16px; /* 책들 간 간격 */
+  max-height: 400px; /* 사이드바 최대 높이 */
+  overflow-y: auto; /* 스크롤 가능하게 */
+  padding: 10px;
+}
+
+.sidebook-item {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.sidebook-item.selected {
+  background-color: #87ceeb; /* 선택된 책 색상 */
+}
+
+.sidebook-item:hover {
+  background-color: #e0e0e0; /* 마우스 hover 시 색상 변화 */
 }
 </style>
