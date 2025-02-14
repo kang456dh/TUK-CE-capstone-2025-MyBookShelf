@@ -12,22 +12,20 @@
             placeholder="새 책장 이름 입력"
           />
         </div>
+
+        <!-- 책장 리스트 -->
         <select
           v-else
           v-model="currentBookshelf"
           @change="selectBookshelf"
-          class="bookshelf-select"
-        >
+          class="bookshelf-select">
           <option value="null" disabled>---------- 책장을 추가해주세요 ----------</option>
-          <option
-            v-for="(shelf, index) in bookshelves"
-            :key="index"
-            :value="shelf.name"
-          >
+          <option v-for="shelf in bookshelves" :key="shelf.id" :value="shelf.id">
             {{ shelf.name }}
           </option>
         </select>
-        <button @click="toggleRenameMode" class="rename-button" :disabled="isNoBookshelf">
+
+        <button @click="renameBookshelf" class="rename-button" :disabled="isNoBookshelf">
           {{ isRenaming ? "저장" : "이름 변경" }}
         </button>
         <button @click="openAddBookshelfModal" class="add-bookshelf-button" :disabled="isNoBookshelf">+</button>
@@ -60,7 +58,7 @@
           class="book-placeholder"
         >
           <div v-if="book.cover" class="book-cover">
-            <img :src="book.cover" alt="책 표지" />
+            <img :src="book.cover || 'default-cover.jpg'" alt="책 표지" />
           </div>
         </div>
       </div>
@@ -92,22 +90,21 @@
 
         <!-- 검색된 책들 -->
         <div v-if="searchResults.length" class="search-results">
-          <div class="book-grid">
-            <div
-              v-for="(book, index) in searchResults.slice(0, 6)"
-              :key="index"
-              class="search-book-item"
-            >
-              <div class="book-cover">
-                <img :src="book.cover" alt="책 표지" />
+          <h4>검색된 책들:</h4>
+          <ul>
+            <li v-for="(book, index) in searchResults.slice(0, 6)" :key="index">
+              <div class="search-book-item">
+                <div class="book-cover">
+                  <img :src="book.cover" alt="책 표지" />
+                </div>
+                <div class="book-info">
+                  <p class="book-title" :title="book.title">{{ book.title.length > 10 ? book.title.slice(0, 10) + '...' : book.title }}</p>
+                  <p class="book-author">{{ book.author }}</p>
+                  <button @click="selectBook(book)" class="select-book-button">선택</button>
+                </div>
               </div>
-              <div class="book-info">
-                <p class="book-title" :title="book.title">{{ book.title.length > 10 ? book.title.slice(0, 10) + '...' : book.title }}</p>
-                <p class="book-author">{{ book.author }}</p>
-                <p class="book-pages">쪽수: {{ book.pages }}</p>
-              </div>
-            </div>
-          </div>
+            </li>
+          </ul>
         </div>
 
         <!-- ISBN 등록 폼 -->
@@ -142,6 +139,8 @@
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: "MyBooksView",
   data() {
@@ -157,8 +156,13 @@ export default {
       isbn: "",
       isAddBookshelfModalOpen: false, // 책장 추가 모달 열기 여부
       searchResults: [], // 검색된 책 정보
+      books: [] // 책 배열 초기화
     };
   },
+  created() {
+    this.fetchBookshelves();
+  },
+
   computed: {
     currentBookshelfBooks() {
       const shelf = this.bookshelves.find(
@@ -167,6 +171,7 @@ export default {
       return shelf ? shelf.books : [];
     },
   },
+
   methods: {
     toggleRenameMode() {
       if (this.currentBookshelf === null) {
@@ -185,16 +190,69 @@ export default {
       }
       this.isRenaming = !this.isRenaming;
     },
-    selectBookshelf() {
-      // 책장 변경 로직
+
+    async fetchBookshelves() {
+      try {
+        /* const userId = 1; */
+        const response = await axios.get(`/api/bookshelf/{userId}`);
+        this.bookshelves = response.data;
+        if (this.bookshelves.length > 0) {
+          this.selectedBookshelf = this.bookshelves[0].id;
+        }
+      } catch (error) {
+        console.error('책장 목록 조회 실패:', error);
+      }
     },
+    async createBookshelf() {
+      if (!this.newBookshelfName) return;
+      try {
+        await axios.post('/api/bookshelf/create', { name: this.newBookshelfName });
+        this.fetchBookshelves();
+        /* this.currentBookshelf = response.data.id; */
+        this.newBookshelfName = '';
+      } catch (error) {
+        console.error('책장 생성 실패:', error);
+      }
+    },
+    async renameBookshelf() {
+      if (!this.selectedBookshelf) return;
+      const newName = prompt('새 책장 이름을 입력하세요:', '');
+      if (!newName) return;
+      try {
+        await axios.put(`/api/bookshelf/${this.selectedBookshelf}`, { name: newName });
+        this.fetchBookshelves(); // 변경된 데이터 다시 가져오기
+      } catch (error) {
+        console.error('책장 이름 수정 실패:', error);
+      }
+    },
+    async deleteBookshelf() {
+      if (!this.selectedBookshelf) return;
+      if (!confirm('정말 이 책장을 삭제하시겠습니까?')) return;
+      try {
+        await axios.delete(`/api/bookshelf/${this.selectedBookshelf}`);
+        this.fetchBookshelves();
+      } catch (error) {
+        console.error('책장 삭제 실패:', error);
+      }
+    },
+
+    selectBookshelf() {
+      this.selectedBookshelf = this.currentBookshelf; // 현재 선택된 책장 ID를 저장
+    },
+
+    openCreateModal() {
+      this.isAddBookshelfModalOpen = true;
+    },
+
     openAddBookshelfModal() {
       this.isAddBookshelfModalOpen = true;
     },
+
     closeAddBookshelfModal() {
       this.isAddBookshelfModalOpen = false;
       this.newBookshelfNameForModal = "";
     },
+
     addBookshelf() {
       if (!this.newBookshelfNameForModal) return;
       const newShelfName = this.newBookshelfNameForModal;
@@ -202,7 +260,8 @@ export default {
       this.currentBookshelf = newShelfName;
       this.closeAddBookshelfModal();
     },
-    deleteBookshelf() {
+
+    /* deleteBookshelf() {
       if (this.bookshelves.length <= 1) {
         alert("최소 1개의 책장이 존재해야 합니다.");
         return; // 책장이 하나일 경우 삭제하지 않음
@@ -221,7 +280,8 @@ export default {
       } else {
         this.currentBookshelf = null; // 책장 없으면 리스트박스에 기본값 '-'
       }
-    },
+    }, */
+
     openSidebar() {
       this.isSidebarOpen = true;
     },
@@ -230,38 +290,63 @@ export default {
       this.manualTitle = "";
       this.isbn = "";
     },
+    async selectBook(book) {
+      if (!this.currentBookshelf) {
+        alert("책장을 먼저 선택해주세요.");
+        return;
+      }
+      try {
+        await axios.post(`/api/bookshelf/${this.currentBookshelf}/addBook`, {
+          bookId: book.id,
+        });
+        this.fetchBookshelves(); // 책장을 다시 불러와서 반영
+      } catch (error) {
+        console.error('책 추가 실패:', error);
+      }
+    },
+
     setRegisterType(type) {
       this.registerType = type;
     },
     searchManual() {
-      // 알라딘 API로 책 제목 검색
-      fetch(`https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=YOUR_TTB_KEY&Query=${this.manualTitle}&SearchTarget=Book&MaxResults=10&output=js`)
-        .then(response => response.json())
-        .then(data => {
-          this.searchResults = data.aladinAPI.books.map(book => ({
-            title: book.title,
-            author: book.author,
-            publisher: book.publisher,
-            isbn: book.isbn,
-            cover: `https://image.aladin.co.kr/cover/large/${book.isbn}.jpg`
-          }));
-        })
-        .catch(error => {
-          console.error("책 검색 오류:", error);
-        });
-    },
+  // 명세서에 제공된 도서 검색 API로 책 제목 검색
+  fetch(`http://localhost:8081/api/books/search?query=${encodeURIComponent(this.manualTitle)}`)
+    .then(response => {
+      // 응답 상태 코드 확인
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json(); // JSON으로 변환
+    })
+    .then(data => {
+      // 서버에서 받아온 데이터 처리
+      this.searchResults = data.books.map(book => ({
+        title: book.title,
+        author: book.author,
+        publisher: book.publisher,
+        isbn: book.isbn,
+
+        //cover: book.cover // 서버에서 전달된 책 표지 URL을 그대로 사용
+      }));
+    })
+    .catch(error => {
+      console.error("책 검색 오류:", error);
+    });
+},
+
+
     searchISBN() {
-      // ISBN을 이용하여 책 검색
-      fetch(`https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=YOUR_TTB_KEY&Query=${this.isbn}&SearchTarget=Book&MaxResults=10&output=js`)
+      // 명세서에 제공된 도서 검색 API로 ISBN을 이용하여 책 검색
+      fetch(`/books/search?query=${encodeURIComponent(this.isbn)}`)
         .then(response => response.json())
         .then(data => {
-          const book = data.aladinAPI.books[0];
+          const book = data.books[0]; // 검색된 책 중 첫 번째 책
           this.searchResults = [{
             title: book.title,
             author: book.author,
             publisher: book.publisher,
             isbn: book.isbn,
-            cover: `https://image.aladin.co.kr/cover/large/${book.isbn}.jpg`
+            cover: book.cover // 서버에서 전달된 책 표지 URL을 그대로 사용
           }];
         })
         .catch(error => {
