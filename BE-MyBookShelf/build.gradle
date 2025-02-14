@@ -51,6 +51,8 @@ dependencies {
 
 	// 테스트 (JUnit 5)
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+	implementation 'org.jetbrains:annotations:24.0.0'
 }
 
 tasks.named('test') {

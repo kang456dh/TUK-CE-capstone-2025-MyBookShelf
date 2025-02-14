@@ -1,7 +1,5 @@
 package org.wsp.mybookshelf.global.searchApi.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.wsp.mybookshelf.global.response.ApiResponse;
 import org.wsp.mybookshelf.global.searchApi.dto.BookResponse;
 import org.wsp.mybookshelf.global.searchApi.service.AladinService;
 import org.wsp.mybookshelf.global.searchApi.service.GoogleBooksService;
@@ -10,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -27,20 +26,18 @@ public class ApiController {
 
     // 알라딘 OpenAPI만 사용한 코드
     @GetMapping("/search")
-    public Mono<Map<String, Object>> searchBooks(
-            @RequestParam(required = true) String query,
-            @RequestParam(required = false, defaultValue = "Keyword") String queryType,
-            /*
-            Keyword (기본값) : 제목 + 저자
-            Title : 제목
-            Author : 저자
-            Publisher : 출판사
-            */
-            @RequestParam(required = true, defaultValue = "1") String start
+    public Mono<Map<@org.jetbrains.annotations.NotNull String, @org.jetbrains.annotations.NotNull List<BookResponse>>> searchBooks(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "Keyword") String queryType,
+            @RequestParam(defaultValue = "1") String start,
+            @RequestParam(defaultValue = "6") int maxResults,
+            @RequestParam(defaultValue = "true") boolean showDetail
     ) {
-        return Mono.fromCallable(() -> aladinService.searchBooks(query, queryType, start))
-                .subscribeOn(Schedulers.boundedElastic())
-                .map(aladinBooks -> Map.of("aladinAPI", aladinBooks));
+        return Mono.fromCallable(() -> {
+            //List<BookResponse> books = aladinService.searchBooks(query, queryType, start, maxResults, showDetail);
+            List<BookResponse> books = LibraryService.searchBooks(query);
+            return Map.of("books", books);
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
 
