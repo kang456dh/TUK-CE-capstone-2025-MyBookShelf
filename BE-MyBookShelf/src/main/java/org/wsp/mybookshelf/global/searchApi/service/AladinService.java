@@ -16,34 +16,38 @@ public class AladinService {
         this.restTemplate = restTemplate;
     }
 
-    public BookResponse searchBooks(String query, String queryType, String start) {
+    public List<BookResponse> searchBooks(String query, String queryType, String start, int maxResults, boolean showDetail) {
         String url = "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?TTBKey=" + API_KEY +
                 "&QueryType=" + queryType +
                 "&Query=" + query +
-                "&MaxResults=6" +
+                "&MaxResults=" + maxResults +
                 "&Start=" + start +
                 "&SearchTarget=Book&Output=JS&Version=20131101";
+
         Map response = restTemplate.getForObject(url, Map.class);
-        List<BookResponse.Book> books = new ArrayList<>();
+        List<BookResponse> books = new ArrayList<>();
 
         if (response != null && response.containsKey("item")) {
             List<Map> items = (List<Map>) response.get("item");
             for (Map item : items) {
-                BookResponse.Book book = new BookResponse.Book();
+                BookResponse book = new BookResponse();
                 book.setTitle((String) item.get("title"));
                 book.setAuthor((String) item.get("author"));
                 book.setPublisher((String) item.get("publisher"));
+                book.setGenre((String) item.get("categoryName")); // 장르 추가
                 book.setIsbn((String) item.get("isbn"));
                 book.setCover((String) item.get("cover"));
-                book.setCustomerReviewRank((Integer) item.get("customerReviewRank"));
+                book.setPublicationDate((String) item.get("pubDate"));
                 book.setSource("Aladin API");
+
+                if (showDetail) {
+                    book.setDescription((String) item.get("description")); // 상세 검색 시만 포함
+                }
+
                 books.add(book);
             }
         }
-
-        BookResponse bookResponse = new BookResponse();
-        bookResponse.setBooks(books);
-        return bookResponse;
+        return books;
     }
 
 
