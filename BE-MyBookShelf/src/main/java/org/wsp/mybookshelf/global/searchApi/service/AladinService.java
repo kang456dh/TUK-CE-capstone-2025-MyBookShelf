@@ -49,4 +49,31 @@ public class AladinService {
         }
         return books;
     }
+
+
+    public BookResponse getBook(String isbn) {
+        String url = "https://www.aladin.co.kr/ttb/api/ItemLookUp.aspx?TTBKey=" + API_KEY +
+                "&itemIdType=ISBN&ItemId=" + isbn +
+                "&output=JS&Version=20131101";
+        Map response = restTemplate.getForObject(url, Map.class);
+        BookResponse.Book book = new BookResponse.Book();
+
+        if (response != null && response.containsKey("item")) {
+            Map item = (Map) response.get("item");
+            book.setTitle((String) item.get("title"));
+            book.setAuthor((String) item.get("author"));
+            book.setPublisher((String) item.get("publisher"));
+            book.setIsbn((String) item.get("isbn"));
+            book.setCover((String) item.get("cover"));
+            book.setCustomerReviewRank((Integer) item.get("customerReviewRank"));
+            book.setSource("Aladin API");
+        }
+
+        BookResponse bookResponse = new BookResponse();
+        List<BookResponse.Book> books = new ArrayList<>();
+        books.add(book);
+        bookResponse.setBooks(books);
+        return bookResponse;
+    }
+
 }

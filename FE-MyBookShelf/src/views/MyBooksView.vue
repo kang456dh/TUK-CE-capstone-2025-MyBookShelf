@@ -14,123 +14,129 @@
         </div>
 
         <!-- 책장 리스트 -->
-        <select
-          v-else
-          v-model="currentBookshelf"
-          @change="selectBookshelf"
-          class="bookshelf-select">
+        <select v-else v-model="currentBookshelf" @change="selectBookshelf" class="bookshelf-select">
           <option value="null" disabled>---------- 책장을 추가해주세요 ----------</option>
-          <option v-for="shelf in bookshelves" :key="shelf.id" :value="shelf.id">
-            {{ shelf.name }}
+          <option v-for="shelf in bookshelves" :key="shelf.bookshelfId" :value="shelf.bookshelfId">
+            {{ shelf.bookshelfName }}
           </option>
         </select>
 
         <button @click="renameBookshelf" class="rename-button" :disabled="isNoBookshelf">
           {{ isRenaming ? "저장" : "이름 변경" }}
         </button>
-        <button @click="openAddBookshelfModal" class="add-bookshelf-button" :disabled="isNoBookshelf">+</button>
+        <button @click="openAddBookshelfModal" class="add-bookshelf-button">+</button>
         <button @click="deleteBookshelf" class="delete-bookshelf-button" :disabled="isNoBookshelf">🗑</button>
-        <button @click="openSidebar" class="add-book-button" :disabled="currentBookshelf === null || currentBookshelf === '-'">책 등록</button>
-      </div>
-    </div>
+        <button @click="openSidebar" class="add-book-button" :disabled="!currentBookshelf">책 등록</button>
 
-    <!-- 책장 추가 모달 -->
-    <div v-if="isAddBookshelfModalOpen" class="add-bookshelf-modal">
-      <div class="add-bookshelf-modal-content">
-        <label for="new-bookshelf-name">책장 이름</label>
-        <input
-          type="text"
-          id="new-bookshelf-name"
-          v-model="newBookshelfNameForModal"
-          placeholder="책장 이름 입력"
-        />
-        <button @click="addBookshelf" class="create-bookshelf-button">생성하기</button>
-        <button @click="closeAddBookshelfModal" class="close-modal-button">취소</button>
-      </div>
-    </div>
-
-    <!-- 네모난 책장 폼 -->
-    <div class="bookshelf">
-      <div class="book-grid">
-        <div
-          v-for="(book, index) in currentBookshelfBooks"
-          :key="index"
-          class="book-placeholder"
-        >
-          <div v-if="book.cover" class="book-cover">
-            <img :src="book.cover || 'default-cover.jpg'" alt="책 표지" />
+        <!-- 책장 추가 모달 -->
+        <div v-if="isAddBookshelfModalOpen" class="add-bookshelf-modal">
+          <div class="add-bookshelf-modal-content">
+            <label for="new-bookshelf-name">책장 이름</label>
+            <input
+              type="text"
+              id="new-bookshelf-name"
+              v-model="newBookshelfNameForModal"
+              placeholder="책장 이름 입력" />
+            <button @click="addBookshelf" class="create-bookshelf-button">생성하기</button>
+            <button @click="closeAddBookshelfModal" class="close-modal-button">취소</button>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- 사이드바 -->
-    <div v-if="isSidebarOpen" class="sidebar">
-      <div class="sidebar-content">
-        <button class="close-button" @click="closeSidebar">✖</button>
-        <h3>책 등록</h3>
-        <div class="registration-options">
-          <button @click="setRegisterType('manual')" :class="{ active: registerType === 'manual' }">
-            직접 등록
-          </button>
-          <button @click="setRegisterType('isbn')" :class="{ active: registerType === 'isbn' }">
-            ISBN 등록
-          </button>
-          <button @click="setRegisterType('photo')" :class="{ active: registerType === 'photo' }">
-            사진 등록
-          </button>
-        </div>
-
-        <!-- 직접 등록 폼 -->
-        <div v-if="registerType === 'manual'" class="manual-form">
-          <label for="title">책 제목</label>
-          <input type="text" id="title" v-model="manualTitle" placeholder="책 제목 입력" />
-          <button @click="searchManual">검색</button>
-        </div>
-
-        <!-- 검색된 책들 -->
-        <div v-if="searchResults.length" class="search-results">
-          <h4>검색된 책들:</h4>
-          <ul>
-            <li v-for="(book, index) in searchResults.slice(0, 6)" :key="index">
-              <div class="search-book-item">
-                <div class="book-cover">
-                  <img :src="book.cover" alt="책 표지" />
-                </div>
-                <div class="book-info">
-                  <p class="book-title" :title="book.title">{{ book.title.length > 10 ? book.title.slice(0, 10) + '...' : book.title }}</p>
-                  <p class="book-author">{{ book.author }}</p>
-                  <button @click="selectBook(book)" class="select-book-button">선택</button>
-                </div>
+        <!-- 네모난 책장 폼 -->
+        <div class="bookshelf">
+          <div class="book-grid">
+            <div
+              v-for="(book, index) in currentBookshelfBooks"
+              :key="index"
+              class="book-placeholder"
+            >
+              <div v-if="book.cover" class="book-cover">
+                <img :src="book.cover || 'default-cover.jpg'" alt="책 표지" />
               </div>
-            </li>
-          </ul>
+            </div>
+          </div>
         </div>
 
-        <!-- ISBN 등록 폼 -->
-        <div v-if="registerType === 'isbn'" class="isbn-form">
-          <label for="isbn">ISBN</label>
-          <input type="text" id="isbn" v-model="isbn" placeholder="ISBN 입력" />
-          <button @click="searchISBN">검색</button>
-        </div>
+        <!-- 사이드바 -->
+        <div v-if="isSidebarOpen" class="sidebar">
+          <div class="sidebar-content">
+            <button class="close-button" @click="closeSidebar">✖</button>
+            <h3>책 등록</h3>
+            <div class="registration-options">
+              <button @click="setRegisterType('manual')" :class="{ active: registerType === 'manual' }">
+                직접 등록
+              </button>
+              <button @click="setRegisterType('isbn')" :class="{ active: registerType === 'isbn' }">
+                ISBN 등록
+              </button>
+              <button @click="setRegisterType('photo')" :class="{ active: registerType === 'photo' }">
+                사진 등록
+              </button>
+            </div>
 
-        <!-- 사진 등록 폼 -->
-        <div v-if="registerType === 'photo'" class="photo-options">
-          <button @click="openFileInput" class="file-upload-button">첨부파일</button>
-          <button @click="openCamera" class="camera-button">사진 촬영</button>
-        </div>
+            <!-- 직접 등록 폼 -->
+            <div v-if="registerType === 'manual'" class="manual-form">
+              <label for="title">책 제목</label>
+              <input type="text" id="title" v-model="manualTitle" placeholder="책 제목 입력" />
+              <button @click="searchManual">검색</button>
+            </div>
 
-        <div class="sidebook-grid">
-          <div
-            v-for="book in books"
-            :key="book.id"
-            class="sidebook-item"
-            :class="{ selected: selectedBooks.includes(book) }"
-            @click="toggleSelection(book)"
-          >
-            <img :src="book.cover" alt="book cover" />
-            <p>{{ book.title }}</p>
-            <p>{{ book.author }}</p>
+            <!-- 검색된 책들 -->
+            <div v-if="searchResults.length" class="search-results">
+              <h4>검색된 책들:</h4>
+
+              <!-- 책 목록 -->
+              <ul>
+                <li v-for="(book, index) in paginatedResults" :key="index">
+                  <div class="search-book-item">
+                    <div class="book-cover">
+                      <img :src="book.cover" alt="책 표지" />
+                    </div>
+                    <div class="book-info">
+                      <p class="book-title" :title="book.title">
+                        {{ book.title.length > 10 ? book.title.slice(0, 10) + '...' : book.title }}
+                      </p>
+                      <p class="book-author">{{ book.author }}</p>
+                      <button @click="selectBook(book)" class="select-book-button">선택</button>
+                    </div>
+                  </div>
+                </li>
+              </ul>
+
+              <!-- 페이지네이션 버튼 -->
+              <div class="pagination">
+                <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1">이전</button>
+                <span>{{ currentPage }} / {{ totalPages }}</span>
+                <button @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages">다음</button>
+              </div>
+            </div>
+
+            <!-- ISBN 등록 폼 -->
+            <div v-if="registerType === 'isbn'" class="isbn-form">
+              <label for="isbn">ISBN</label>
+              <input type="text" id="isbn" v-model="isbn" placeholder="ISBN 입력" />
+              <button @click="searchISBN">검색</button>
+            </div>
+
+            <!-- 사진 등록 폼 -->
+            <div v-if="registerType === 'photo'" class="photo-options">
+              <button @click="openFileInput" class="file-upload-button">첨부파일</button>
+              <button @click="openCamera" class="camera-button">사진 촬영</button>
+            </div>
+
+            <div class="sidebook-grid">
+              <div
+                v-for="book in books"
+                :key="book.id"
+                class="sidebook-item"
+                :class="{ selected: selectedBooks.includes(book) }"
+                @click="toggleSelection(book)"
+              >
+                <img :src="book.cover" alt="book cover" />
+                <p>{{ book.title }}</p>
+                <p>{{ book.author }}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -140,6 +146,8 @@
 
 <script>
 import axios from 'axios';
+
+axios.defaults.baseURL = 'http://localhost:8081'; // 기본 API 주소 설정
 
 export default {
   name: "MyBooksView",
@@ -156,7 +164,9 @@ export default {
       isbn: "",
       isAddBookshelfModalOpen: false, // 책장 추가 모달 열기 여부
       searchResults: [], // 검색된 책 정보
-      books: [] // 책 배열 초기화
+      books: [], // 책 배열 초기화
+      currentPage: 1, // 현재 페이지
+      booksPerPage: 6, // 페이지당 책 개수
     };
   },
   created() {
@@ -170,15 +180,29 @@ export default {
       );
       return shelf ? shelf.books : [];
     },
+
+    // 사이드바 결과 페이지 쪽수
+    paginatedResults() {
+      const start = (this.currentPage - 1) * this.booksPerPage;
+      const end = this.currentPage * this.booksPerPage;
+      return this.searchResults.slice(start, end);
+    },
+    totalPages() {
+      return Math.ceil(this.searchResults.length / this.booksPerPage);
+    },
   },
 
   methods: {
+    changePage(page) {
+      if (page < 1 || page > this.totalPages) return;
+      this.currentPage = page;
+    },
+
     toggleRenameMode() {
       if (this.currentBookshelf === null) {
         alert("책장을 먼저 선택해주세요.");
         return;
       }
-
       if (this.isRenaming) {
         const shelf = this.bookshelves.find(
           (shelf) => shelf.name === this.currentBookshelf
@@ -191,46 +215,100 @@ export default {
       this.isRenaming = !this.isRenaming;
     },
 
+    // 특정 사용자의 책장 불러오기 (책장 목록 조회 API)
     async fetchBookshelves() {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const userId = user ? user.userId : null; // userId를 가져옵니다.
+
+    
+
       try {
-        /* const userId = 1; */
-        const response = await axios.get(`/api/bookshelf/{userId}`);
-        this.bookshelves = response.data;
-        if (this.bookshelves.length > 0) {
-          this.selectedBookshelf = this.bookshelves[0].id;
-        }
+        const response = await axios.get(`/api/bookshelf/${userId}`); // userId를 URL에 포함
+        this.bookshelves = response.data.result || [];
       } catch (error) {
         console.error('책장 목록 조회 실패:', error);
       }
     },
-    async createBookshelf() {
-      if (!this.newBookshelfName) return;
+
+    // 책장 생성 API
+    async addBookshelf() {
+      const user = JSON.parse(localStorage.getItem('user'));
+      //const userId = user ? user.id : null;  // userId를 가져옵니다.
+      const userId = user ? user.userId : null;  // userId를 가져옵니다.
+
+      
+
+      if (!this.newBookshelfNameForModal.trim()) {
+        alert("책장 이름을 입력해 주세요.");
+        return;
+      }
+
       try {
-        await axios.post('/api/bookshelf/create', { name: this.newBookshelfName });
-        this.fetchBookshelves();
-        /* this.currentBookshelf = response.data.id; */
-        this.newBookshelfName = '';
+        const response = await axios.post('/api/bookshelf/create', {
+          userId: userId,
+          bookshelfName: this.newBookshelfNameForModal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`서버 오류: ${response.status}`); // 404 등 상태 코드 체크
+        }
+
+        const data = await response.json();
+        if (data.isSuccess) { // 응답 상태를 isSuccess로 확인
+          alert("책장이 추가되었습니다!");
+          this.bookshelves.push({
+            bookshelfId: data.data.id, // 응답에서 책장 ID를 가져옵니다.
+            bookshelfName: this.newBookshelfNameForModal,
+          });
+          this.newBookshelfNameForModal = "";
+          this.isAddBookshelfModalOpen = false;
+        } else {
+          alert("책장 추가 실패: " + data.message);
+        }
       } catch (error) {
-        console.error('책장 생성 실패:', error);
+        console.error("책장 추가 중 오류 발생:", error);
       }
     },
+
+    // 책장 이름 수정 API
     async renameBookshelf() {
-      if (!this.selectedBookshelf) return;
+      if (!this.selectedBookshelf) return; // 선택된 책장이 없을 경우 처리
+      
       const newName = prompt('새 책장 이름을 입력하세요:', '');
-      if (!newName) return;
+      if (!newName) return; // 새 이름이 입력되지 않으면 처리
+
       try {
-        await axios.put(`/api/bookshelf/${this.selectedBookshelf}`, { name: newName });
-        this.fetchBookshelves(); // 변경된 데이터 다시 가져오기
+        const response = await axios.patch("/api/bookshelf/edit", {
+          bookshelfId: this.selectedBookshelf, // 수정할 책장 ID
+          bookshelfName: newName, // 새 책장 이름
+        });
+
+        if (response.data.isSuccess) {
+          alert("책장 이름이 수정되었습니다!");
+          this.fetchBookshelves(); // 변경된 데이터 다시 가져오기
+        } else {
+          alert("책장 이름 수정 실패: " + response.data.message);
+        }
       } catch (error) {
         console.error('책장 이름 수정 실패:', error);
       }
     },
+
+    // 책장 삭제 API
     async deleteBookshelf() {
-      if (!this.selectedBookshelf) return;
+      if (!this.selectedBookshelf) return; // 선택된 책장이 없을 경우 처리
+      
       if (!confirm('정말 이 책장을 삭제하시겠습니까?')) return;
+
       try {
-        await axios.delete(`/api/bookshelf/${this.selectedBookshelf}`);
-        this.fetchBookshelves();
+        const response = await axios.delete(`/api/bookshelf/delete/${this.selectedBookshelf}`);
+
+        if (response.data.isSuccess) { // isSuccess로 확인
+          alert("책장이 삭제되었습니다!");
+          this.fetchBookshelves(); // 변경된 데이터 다시 가져오기
+        } else {
+          alert("책장 삭제 실패: " + response.data.message);
+        }
       } catch (error) {
         console.error('책장 삭제 실패:', error);
       }
@@ -238,10 +316,6 @@ export default {
 
     selectBookshelf() {
       this.selectedBookshelf = this.currentBookshelf; // 현재 선택된 책장 ID를 저장
-    },
-
-    openCreateModal() {
-      this.isAddBookshelfModalOpen = true;
     },
 
     openAddBookshelfModal() {
@@ -253,35 +327,6 @@ export default {
       this.newBookshelfNameForModal = "";
     },
 
-    addBookshelf() {
-      if (!this.newBookshelfNameForModal) return;
-      const newShelfName = this.newBookshelfNameForModal;
-      this.bookshelves.push({ name: newShelfName, books: [] });
-      this.currentBookshelf = newShelfName;
-      this.closeAddBookshelfModal();
-    },
-
-    /* deleteBookshelf() {
-      if (this.bookshelves.length <= 1) {
-        alert("최소 1개의 책장이 존재해야 합니다.");
-        return; // 책장이 하나일 경우 삭제하지 않음
-      }
-
-      if (this.currentBookshelf === null) {
-        alert("책장을 먼저 선택해주세요.");
-        return;
-      }
-
-      this.bookshelves = this.bookshelves.filter(
-        (shelf) => shelf.name !== this.currentBookshelf
-      );
-      if (this.bookshelves.length > 0) {
-        this.currentBookshelf = this.bookshelves[0].name;
-      } else {
-        this.currentBookshelf = null; // 책장 없으면 리스트박스에 기본값 '-'
-      }
-    }, */
-
     openSidebar() {
       this.isSidebarOpen = true;
     },
@@ -290,6 +335,8 @@ export default {
       this.manualTitle = "";
       this.isbn = "";
     },
+
+    // 검색된 책을 책장에 넣는 작업
     async selectBook(book) {
       if (!this.currentBookshelf) {
         alert("책장을 먼저 선택해주세요.");
@@ -297,9 +344,14 @@ export default {
       }
       try {
         await axios.post(`/api/bookshelf/${this.currentBookshelf}/addBook`, {
-          bookId: book.id,
+          bookId: book.book.id,
         });
-        this.fetchBookshelves(); // 책장을 다시 불러와서 반영
+        
+        // 책장 목록을 다시 불러와 최신 상태로 반영
+        this.fetchBookshelves(); 
+
+        // 책장에 추가된 책을 화면에 즉시 반영
+        alert(`'${book.title}' 책이 책장에 추가되었습니다.`);
       } catch (error) {
         console.error('책 추가 실패:', error);
       }
@@ -308,51 +360,45 @@ export default {
     setRegisterType(type) {
       this.registerType = type;
     },
-    searchManual() {
-  // 명세서에 제공된 도서 검색 API로 책 제목 검색
-  fetch(`http://localhost:8081/api/books/search?query=${encodeURIComponent(this.manualTitle)}`)
-    .then(response => {
-      // 응답 상태 코드 확인
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json(); // JSON으로 변환
-    })
-    .then(data => {
-      // 서버에서 받아온 데이터 처리
-      this.searchResults = data.books.map(book => ({
-        title: book.title,
-        author: book.author,
-        publisher: book.publisher,
-        isbn: book.isbn,
 
-        //cover: book.cover // 서버에서 전달된 책 표지 URL을 그대로 사용
-      }));
-    })
-    .catch(error => {
-      console.error("책 검색 오류:", error);
-    });
-},
-
-
-    searchISBN() {
-      // 명세서에 제공된 도서 검색 API로 ISBN을 이용하여 책 검색
-      fetch(`/books/search?query=${encodeURIComponent(this.isbn)}`)
-        .then(response => response.json())
-        .then(data => {
-          const book = data.books[0]; // 검색된 책 중 첫 번째 책
-          this.searchResults = [{
-            title: book.title,
-            author: book.author,
-            publisher: book.publisher,
-            isbn: book.isbn,
-            cover: book.cover // 서버에서 전달된 책 표지 URL을 그대로 사용
-          }];
-        })
-        .catch(error => {
-          console.error("ISBN 검색 오류:", error);
+    // 알라딘 도서 검색 API (제목 검색)
+    async searchManual() {
+      try {
+        const response = await axios.get(`/api/books/search`, {
+          params: { query: this.manualTitle },
         });
+        this.searchResults = response.data.books.map(book => ({
+          title: book.title,
+          author: book.author,
+          publisher: book.publisher,
+          isbn: book.isbn,
+          cover: book.cover,
+        }));
+        this.currentPage = 1;
+      } catch (error) {
+        console.error("책 검색 오류:", error);
+      }
     },
+
+    // 알라딘 도서 검색(ISBN)
+    async searchISBN() {
+      try {
+        const response = await axios.get(`/api/books/search`, {
+          params: { query: this.isbn },
+        });
+        const book = response.data.books[0];
+        this.searchResults = [{
+          title: book.title,
+          author: book.author,
+          publisher: book.publisher,
+          isbn: book.isbn,
+          cover: book.cover,
+        }];
+      } catch (error) {
+        console.error("ISBN 검색 오류:", error);
+      }
+    },
+
     openFileInput() {
       const fileInput = document.createElement('input');
       fileInput.type = 'file';
@@ -379,6 +425,7 @@ export default {
         alert("모바일에서만 지원됩니다.");
       }
     },
+
   },
 };
 </script>
@@ -464,13 +511,64 @@ export default {
   align-items: center; /* 책 표지를 세로 중앙으로 정렬 */
 }
 
-.book-cover img {
-  width: 80%; /* 책 표지 너비를 80%로 설정 */
-  height: auto; /* 자동으로 비율에 맞게 높이를 설정 */
-  object-fit: cover;
-  border-radius: 8px;
+.search-results ul {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2개씩 배치 */
+  gap: 10px;
 }
 
+.search-book-item {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  border: 1px solid #ddd;
+  padding: 10px;
+  background: white;
+  border-radius: 5px;
+}
+
+.book-cover {
+  display: flex;
+  align-items: stretch;
+  width: 100px; /* 원하는 너비 설정 */
+}
+
+.book-cover img {
+  width: 100%;
+  height: auto; /* 자동으로 비율에 맞게 높이를 설정 */
+  object-fit: cover;
+}
+
+.book-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.book-title {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.book-author {
+  font-size: 12px;
+  color: gray;
+}
+
+.select-book-button {
+  margin-top: 5px;
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.select-book-button:hover {
+  background-color: #0056b3;
+}
 
 /* 사이드바 스타일 */
 .sidebar {
