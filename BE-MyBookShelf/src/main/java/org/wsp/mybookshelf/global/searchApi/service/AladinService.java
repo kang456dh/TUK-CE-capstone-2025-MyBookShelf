@@ -49,4 +49,27 @@ public class AladinService {
         }
         return books;
     }
+
+    public BookResponse searchBookDetail(String isbn13){
+        String url = "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?TTBKey=" + API_KEY +
+                "&Query=" + isbn13 +
+                "&SearchTarget=Book&Output=JS&Version=20131101";
+
+        Map response = restTemplate.getForObject(url, Map.class);
+
+        if (response != null && response.containsKey("item")) {
+            Map item = ((List<Map>) response.get("item")).get(0);
+            BookResponse bookResponse = new BookResponse();
+            bookResponse.setTitle((String) item.get("title"));
+            bookResponse.setAuthor((String) item.get("author"));
+            bookResponse.setPublisher((String) item.get("publisher"));
+            bookResponse.setIsbn((String) item.get("isbn"));
+            bookResponse.setCover((String) item.get("cover"));
+            bookResponse.setCustomerReviewRank((Integer) item.get("customerReviewRank"));
+            bookResponse.setSource("Aladin API");
+            return bookResponse;
+        }
+
+        return null;
+    }
 }
