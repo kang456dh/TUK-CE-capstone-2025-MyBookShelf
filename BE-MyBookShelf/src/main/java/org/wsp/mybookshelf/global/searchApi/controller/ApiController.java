@@ -34,8 +34,8 @@ public class ApiController {
             @RequestParam(defaultValue = "true") boolean showDetail
     ) {
         return Mono.fromCallable(() -> {
-            //List<BookResponse> books = aladinService.searchBooks(query, queryType, start, maxResults, showDetail);
-            List<BookResponse> books = LibraryService.searchBooks(query);
+            List<BookResponse> books = aladinService.searchBooks(query, queryType, start, maxResults, showDetail);
+            //List<BookResponse> books = LibraryService.searchBooks(query);
             return Map.of("books", books);
         }).subscribeOn(Schedulers.boundedElastic());
     }
