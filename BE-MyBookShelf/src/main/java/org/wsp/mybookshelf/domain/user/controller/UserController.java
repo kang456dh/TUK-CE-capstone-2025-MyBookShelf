@@ -49,7 +49,7 @@ public class UserController {
 
             // 응답 DTO 생성
             UserResponseDTO responseDTO = UserResponseDTO.builder()
-                    .id(savedUser.getUserId())
+                    .userId(savedUser.getUserId())
                     .email(savedUser.getEmail())
                     .realname(savedUser.getRealName())
                     .nickname(savedUser.getNickName())
@@ -83,7 +83,7 @@ public class UserController {
 
             // 세션에 사용자 정보 저장
             HttpSession session = request.getSession();
-            session.setAttribute("user_id", userResponse.getId()); // 세션에 user_id 저장
+            session.setAttribute("userId", userResponse.getUserId()); // 세션에 userId 저장
 
             return ResponseEntity.ok(ApiResponse.onSuccess(userResponse));
         } catch (RuntimeException e) {
@@ -98,11 +98,11 @@ public class UserController {
         HttpSession session = request.getSession(false);
         System.out.println("로그인 여부 판단 호출");
 
-        if (session == null || session.getAttribute("user_id") == null) {
+        if (session == null || session.getAttribute("userId") == null) {
             return ResponseEntity.ok(ApiResponse.onFailure("401", "로그인되지 않았습니다."));
         }
 
-        Long userId = (Long) session.getAttribute("user_id");
+        Long userId = (Long) session.getAttribute("userId");
         User user = userService.findUserById(userId);
 
         if (user == null) {
@@ -110,7 +110,7 @@ public class UserController {
         }
 
         UserResponseDTO responseDTO = UserResponseDTO.builder()
-                .id(user.getUserId())
+                .userId(user.getUserId())
                 .email(user.getEmail())
                 .realname(user.getRealName())
                 .nickname(user.getNickName())

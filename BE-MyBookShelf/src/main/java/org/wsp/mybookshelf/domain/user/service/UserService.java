@@ -61,7 +61,7 @@ public class UserService {
 
         // 사용자 정보 응답 DTO로 변환
         return UserResponseDTO.builder()
-                .id(user.getUserId())
+                .userId(user.getUserId())
                 .email(user.getEmail())
                 .realname(user.getRealName())
                 .nickname(user.getNickName())

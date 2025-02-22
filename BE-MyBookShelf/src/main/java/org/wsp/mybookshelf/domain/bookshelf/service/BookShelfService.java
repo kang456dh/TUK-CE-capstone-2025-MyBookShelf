@@ -40,7 +40,7 @@ public class BookShelfService {
 
     //책장 조회
     @Transactional
-    public List<BookShelfDTO> getBookShelf(Long userId){
+    public List<BookShelfDTO> getBookShelf(Long userId) {
         // 사용자 ID에 따라 책장을 조회
         List<BookShelf> bookshelfList = bookShelfRepository.findByUser_UserId(userId);
 
@@ -50,24 +50,37 @@ public class BookShelfService {
             List<MappingBook> mappings = mappingBookRepository.findByBookshelf_BookshelfId(bookshelf.getBookshelfId());
             List<BookDTO> books = mappings.stream().map(mapping -> {
                 Book book = mapping.getBook();
-                return new BookDTO(book.getBookId(), book.getTitle(), book.getIsbn(), book.getThumbnail());
+                return new BookDTO(
+                        book.getBookId(),
+                        book.getTitle(),
+                        book.getAuthor(),
+                        book.getPublisher(),
+                        book.getGenre(),
+                        book.getIsbn(),
+                        book.getPublicationDate(),
+                        book.getCover(),
+                        book.getCustomerReviewRank(),
+                        book.getSource(),
+                        book.getDescription()
+                );
             }).collect(Collectors.toList());
 
             return new BookShelfDTO(bookshelf.getBookshelfId(), bookshelf.getBookshelfName(), books);
         }).collect(Collectors.toList());
     }
 
+
     //책장에 도서 등록
     @Transactional
-    public String addBookToBookshelf(Long bookshelfId, BookDTO.BookDetailDTO bookDetailDTO) {
+    public String addBookToBookshelf(Long bookshelfId, BookDTO bookDTO) {
         // 책장 찾기
         BookShelf bookshelf = bookShelfRepository.findById(bookshelfId).orElseThrow(() ->
                 new RuntimeException("책장을 찾을 수 없습니다."));
 
-        // 책 추가 또는 존재 여부 확인
-        Book book = bookService.addBookIfNotExists(bookDetailDTO);
+        //존재 여부 확인 후 도서 등록 로직
+        Book book = bookService.addBookIfNotExists(bookDTO);
 
-        // 매핑 추가
+        // 매핑 (도서-책장) 추가
         MappingBook mappingBook = MappingBook.builder()
                 .bookshelf(bookshelf)
                 .book(book)

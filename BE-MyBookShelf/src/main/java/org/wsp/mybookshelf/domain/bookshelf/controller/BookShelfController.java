@@ -26,11 +26,12 @@ public class BookShelfController {
         return ResponseEntity.ok(ApiResponse.onSuccess(bookShelfList));
     }
 
+    //책장에 도서 등록
     @PostMapping("/{bookshelfId}/book")
     public ResponseEntity<ApiResponse<String>> addBookToBookshelf(@PathVariable Long bookshelfId,
-                                                                  @RequestBody BookDTO.BookDetailDTO bookDetailDTO) {
+                                                                  @RequestBody BookDTO bookDTO) {
         // 책장에 도서 등록
-        String responseMessage = bookShelfService.addBookToBookshelf(bookshelfId, bookDetailDTO);
+        String responseMessage = bookShelfService.addBookToBookshelf(bookshelfId, bookDTO);
 
         // 성공적인 응답 반환
         return ResponseEntity.ok(ApiResponse.onSuccess(responseMessage));
@@ -38,8 +39,10 @@ public class BookShelfController {
 
 
     // 책장 생성
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<ApiResponse<BookShelfDTO>> createBookShelf(@RequestBody BookShelfDTO.CreateBookShelfDTO createBookShelfDTO) {
+
+        System.out.println("책장생성 API 호출");
         // 책장 생성
         BookShelf createdShelf = bookShelfService.createBookShelf(createBookShelfDTO.getUserId(), createBookShelfDTO.getBookshelfName());
 

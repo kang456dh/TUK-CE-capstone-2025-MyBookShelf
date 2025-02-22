@@ -72,4 +72,8 @@ public class AladinService {
 
         return null;
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 506eabb72a7bed37e9969adf9d030302ccda794b
