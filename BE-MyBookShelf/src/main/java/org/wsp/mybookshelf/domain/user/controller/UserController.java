@@ -79,7 +79,7 @@ public class UserController {
         System.out.println("Received login request: " + requestDTO);
         try {
             UserResponseDTO userResponse = userService.loginUser(requestDTO);
-            System.out.println("로그인");
+            System.out.println("로그인 성공");
 
             // 세션에 사용자 정보 저장
             HttpSession session = request.getSession();
@@ -92,6 +92,33 @@ public class UserController {
                     .body(ApiResponse.onFailure("401", e.getMessage()));
         }
     }
+
+    @GetMapping("/info")
+    public ResponseEntity<ApiResponse<UserResponseDTO>> getUserInfo(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        System.out.println("로그인 여부 판단 호출");
+
+        if (session == null || session.getAttribute("user_id") == null) {
+            return ResponseEntity.ok(ApiResponse.onFailure("401", "로그인되지 않았습니다."));
+        }
+
+        Long userId = (Long) session.getAttribute("user_id");
+        User user = userService.findUserById(userId);
+
+        if (user == null) {
+            return ResponseEntity.ok(ApiResponse.onFailure("404", "사용자를 찾을 수 없습니다."));
+        }
+
+        UserResponseDTO responseDTO = UserResponseDTO.builder()
+                .id(user.getUserId())
+                .email(user.getEmail())
+                .realname(user.getRealName())
+                .nickname(user.getNickName())
+                .build();
+
+        return ResponseEntity.ok(ApiResponse.onSuccess(responseDTO));
+    }
+
 
     //로그아웃
     @PostMapping("/logout")

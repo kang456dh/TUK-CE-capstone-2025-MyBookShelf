@@ -68,6 +68,12 @@ public class UserService {
                 .build();
     }
 
+    // 사용자 ID로 정보 가져오기
+    public User findUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+    }
+
     // 이메일 중복 검사
     @Transactional(readOnly = true)
     public boolean isEmailDuplicate(String email) {
