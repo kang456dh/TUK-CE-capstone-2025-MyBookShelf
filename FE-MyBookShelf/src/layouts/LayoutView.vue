@@ -8,11 +8,11 @@
           <input
             type="text"
             v-model="searchQuery"
-            @keyup.enter="performSearch"
+            @keyup.enter="goToSearch"
             placeholder="검색..."
             class="search-input"
           />
-          <button @click="performSearch" class="search-button">
+          <button @click="goToSearch" class="search-button">
             검색
           </button>
         </div>
@@ -94,34 +94,38 @@ export default {
         console.error('로그아웃 실패', error);
       }
     },
-    async checkLoginStatus() {
-  try {
-    const response = await axios.get('/api/user/info');
-    console.log('서버 응답:', response.data); // 응답 로그 추가
 
-    // 서버 응답에서 isSuccess가 true일 때만 로그인 상태를 업데이트
-    if (response.data.isSuccess) {
-      this.isLoggedIn = true;
-      this.nickname = response.data.result.nickname; // `result`에서 닉네임 가져오기
-      console.log('로그인된 사용자:', response.data.result);
-    } else {
-      console.log('로그인되지 않음');
-      this.isLoggedIn = false;
-      this.nickname = '';
-    }
-  } catch (error) {
-    console.error('로그인 상태 확인 실패', error);
-    this.isLoggedIn = false;
-    this.nickname = '';
-  }
-},
+    async checkLoginStatus() {
+      try {
+        const response = await axios.get('/api/user/info');
+        console.log('서버 응답:', response.data); // 응답 로그 추가
+
+        // 서버 응답에서 isSuccess가 true일 때만 로그인 상태를 업데이트
+        if (response.data.isSuccess) {
+          this.isLoggedIn = true;
+          this.nickname = response.data.result.nickname; // `result`에서 닉네임 가져오기
+          console.log('로그인된 사용자:', response.data.result);
+        } else {
+          console.log('로그인되지 않음');
+          this.isLoggedIn = false;
+          this.nickname = '';
+        }
+      } catch (error) {
+        console.error('로그인 상태 확인 실패', error);
+        this.isLoggedIn = false;
+        this.nickname = '';
+      }
+    },
+
     syncLoginStatus() {
       this.checkLoginStatus(); // localStorage 변경 감지 시 로그인 상태 확인
     },
-    performSearch() {
-      // 검색 수행 로직 추가
-      console.log('검색:', this.searchQuery);
-    }
+
+    goToSearch() {
+      if (this.searchQuery) {
+        this.$router.push({ path: '/search', query: { query: this.searchQuery } });
+      }
+    },
   },
 };
 </script>
@@ -168,14 +172,22 @@ header {
   border: 2px solid #FFA500;
 }
 
+.login-button:hover {
+  background-color: #e39400; /* 마우스 hover 시 어두운 주황색 */
+}
+
 .navbar {
   position: fixed;
-  top: 70px;
+  top: 75px;
   left: 0;
   width: 100%;
   background-color: #FFA500;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   z-index: 90;
+}
+
+.navbar:hover {
+  background-color: #e39400; /* 마우스 hover 시 어두운 주황색 */
 }
 
 .navbar ul {
@@ -232,4 +244,21 @@ main {
   color: #333;
   font-weight: bold;
 }
+
+.search-button {
+  padding: 5px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #FFA500; /* 주황색 */
+  color: white;
+  border: 2px solid #FFA500; /* 주황색 테두리 */
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+  margin-left: 10px; /* 검색창과 버튼 사이 여백 추가 */
+}
+
+.search-button:hover {
+  background-color: #e39400; /* 호버 시 조금 더 진한 주황색 */
+}
+
 </style>

@@ -44,7 +44,7 @@ export default {
         if (response.data.isSuccess) {
           alert('로그인 성공!');
           // ✅ localStorage에 로그인 정보 저장
-          localStorage.setItem('user', JSON.stringify(response.data.data));
+          localStorage.setItem('user', JSON.stringify(response.data.result));
 
           // ✅ 모든 탭에서 로그인 상태 반영
           window.dispatchEvent(new Event('storage'));
@@ -157,4 +157,3 @@ export default {
     color: #fff;
   }
   </style>
-  

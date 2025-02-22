@@ -50,30 +50,26 @@ public class AladinService {
         return books;
     }
 
+    public BookResponse searchBookDetail(String isbn13){
+        String url = "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?TTBKey=" + API_KEY +
+                "&Query=" + isbn13 +
+                "&SearchTarget=Book&Output=JS&Version=20131101";
 
-    public BookResponse getBook(String isbn) {
-        String url = "https://www.aladin.co.kr/ttb/api/ItemLookUp.aspx?TTBKey=" + API_KEY +
-                "&itemIdType=ISBN&ItemId=" + isbn +
-                "&output=JS&Version=20131101";
         Map response = restTemplate.getForObject(url, Map.class);
-        BookResponse.Book book = new BookResponse.Book();
 
         if (response != null && response.containsKey("item")) {
-            Map item = (Map) response.get("item");
-            book.setTitle((String) item.get("title"));
-            book.setAuthor((String) item.get("author"));
-            book.setPublisher((String) item.get("publisher"));
-            book.setIsbn((String) item.get("isbn"));
-            book.setCover((String) item.get("cover"));
-            book.setCustomerReviewRank((Integer) item.get("customerReviewRank"));
-            book.setSource("Aladin API");
+            Map item = ((List<Map>) response.get("item")).get(0);
+            BookResponse bookResponse = new BookResponse();
+            bookResponse.setTitle((String) item.get("title"));
+            bookResponse.setAuthor((String) item.get("author"));
+            bookResponse.setPublisher((String) item.get("publisher"));
+            bookResponse.setIsbn((String) item.get("isbn"));
+            bookResponse.setCover((String) item.get("cover"));
+            bookResponse.setCustomerReviewRank((Integer) item.get("customerReviewRank"));
+            bookResponse.setSource("Aladin API");
+            return bookResponse;
         }
 
-        BookResponse bookResponse = new BookResponse();
-        List<BookResponse.Book> books = new ArrayList<>();
-        books.add(book);
-        bookResponse.setBooks(books);
-        return bookResponse;
+        return null;
     }
-
 }
