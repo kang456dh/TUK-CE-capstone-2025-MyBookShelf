@@ -26,8 +26,11 @@ public class Book {
     @Column(name = "publisher")
     private String publisher;
 
-    @Column(name = "genre")  // 장르로 변경
-    private String genre;
+    @Column(name = "category_id")  //카테고리 ID
+    private Integer categoryId;
+    
+    @Column(name = "category_name") //카테고리 이름
+    private String categoryName;
 
     @Column(name = "isbn")
     private String isbn;

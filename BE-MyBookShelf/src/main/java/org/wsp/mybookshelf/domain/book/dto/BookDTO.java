@@ -10,12 +10,13 @@ public class BookDTO {
     private String title;
     private String author;
     private String publisher;
-    private String genre;
     private String isbn;
-    private String publicationDate;  // 출판일 추가
+    private String publicationDate;
+    private String description;
     private String cover; // 책 표지
     private Integer customerReviewRank;
     private String source;  // 데이터 출처
-    private String description;
+    private Integer categoryId;
+    private String categoryName;
 
 }

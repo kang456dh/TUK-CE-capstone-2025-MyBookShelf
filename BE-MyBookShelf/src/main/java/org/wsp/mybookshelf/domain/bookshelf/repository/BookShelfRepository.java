@@ -10,5 +10,4 @@ import java.util.List;
 public interface BookShelfRepository extends JpaRepository<BookShelf, Long> {
     List<BookShelf> findByUser_UserId(Long userId); //userId로 책장 목록 조회
 
-
 }

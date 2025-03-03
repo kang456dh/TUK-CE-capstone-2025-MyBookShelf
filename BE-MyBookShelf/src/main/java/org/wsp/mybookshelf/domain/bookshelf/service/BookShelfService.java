@@ -14,8 +14,14 @@ import org.wsp.mybookshelf.domain.mappingbook.entity.MappingBook;
 import org.wsp.mybookshelf.domain.mappingbook.repository.MappingBookRepository;
 import org.wsp.mybookshelf.domain.user.entity.User;
 import org.wsp.mybookshelf.domain.user.repository.UserRepository;
+import org.wsp.mybookshelf.global.searchApi.dto.BookResponse;
+import org.wsp.mybookshelf.global.searchApi.service.AladinService;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +42,8 @@ public class BookShelfService {
     @Autowired
     private BookService bookService;
 
+    @Autowired
+    private AladinService aladinService;
 
 
     //책장 조회
@@ -51,23 +59,60 @@ public class BookShelfService {
             List<BookDTO> books = mappings.stream().map(mapping -> {
                 Book book = mapping.getBook();
                 return new BookDTO(
-                        book.getBookId(),
-                        book.getTitle(),
-                        book.getAuthor(),
-                        book.getPublisher(),
-                        book.getGenre(),
-                        book.getIsbn(),
-                        book.getPublicationDate(),
-                        book.getCover(),
-                        book.getCustomerReviewRank(),
-                        book.getSource(),
-                        book.getDescription()
+                        book.getBookId(),          // ✅ bookId
+                        book.getTitle(),           // ✅ title
+                        book.getAuthor(),          // ✅ author
+                        book.getPublisher(),       // ✅ publisher
+                        book.getIsbn(),            // ✅ isbn
+                        book.getPublicationDate(), // ✅ publicationDate
+                        book.getDescription(),     // ✅ description
+                        book.getCover(),           // ✅ cover
+                        book.getCustomerReviewRank(), // ✅ customerReviewRank
+                        book.getSource(),          // ✅ source
+                        book.getCategoryId(),    // ✅ categoryID
+                        book.getCategoryName()     // ✅ categoryName
                 );
+
+
             }).collect(Collectors.toList());
 
             return new BookShelfDTO(bookshelf.getBookshelfId(), bookshelf.getBookshelfName(), books);
         }).collect(Collectors.toList());
     }
+
+    //책장 ID로 책장의 도서 조회
+    @Transactional
+    public BookShelfDTO getBookShelfById(Long bookshelfId) {
+        // 책장 ID로 책장 조회 (없으면 예외 발생)
+        BookShelf bookshelf = bookShelfRepository.findById(bookshelfId)
+                .orElseThrow(() -> new RuntimeException("해당 책장을 찾을 수 없습니다."));
+
+        // 해당 책장에 매핑된 도서 목록 조회
+        List<MappingBook> mappings = mappingBookRepository.findByBookshelf_BookshelfId(bookshelfId);
+
+        // BookDTO 리스트 변환
+        List<BookDTO> books = mappings.stream().map(mapping -> {
+            Book book = mapping.getBook();
+            return new BookDTO(
+                    book.getBookId(),          // ✅ bookId
+                    book.getTitle(),           // ✅ title
+                    book.getAuthor(),          // ✅ author
+                    book.getPublisher(),       // ✅ publisher
+                    book.getIsbn(),            // ✅ isbn
+                    book.getPublicationDate(), // ✅ publicationDate
+                    book.getDescription(),     // ✅ description
+                    book.getCover(),           // ✅ cover
+                    book.getCustomerReviewRank(), // ✅ customerReviewRank
+                    book.getSource(),          // ✅ source
+                    book.getCategoryId(),    // ✅ categoryID
+                    book.getCategoryName()     // ✅ categoryName
+            );
+        }).collect(Collectors.toList());
+
+        // BookShelfDTO 생성 및 반환
+        return new BookShelfDTO(bookshelf.getBookshelfId(), bookshelf.getBookshelfName(), books);
+    }
+
 
 
     //책장에 도서 등록
@@ -99,6 +144,104 @@ public class BookShelfService {
         bookShelf.setBookshelfName(bookshelfName);
         bookShelf.setUser(user); // 사용자 설정
         return bookShelfRepository.save(bookShelf);
+    }
+
+    //책장의 책 장르 정보 수집
+    @Transactional
+    public List<Integer> getCategoryIdsFromBookshelf(Long bookshelfId) {
+        // 책장 정보 조회
+        BookShelfDTO bookShelfDTO = getBookShelfById(bookshelfId);
+
+        // 책장에 있는 책들의 카테고리 ID 목록 추출
+        return bookShelfDTO.getBook().stream()
+                .map(BookDTO::getCategoryId)
+                .collect(Collectors.toList());
+    }
+
+    //책장 삭제
+    public String deleteBookShelf(Long bookshelfId) {
+
+        // 책장 삭제
+        bookShelfRepository.deleteById(bookshelfId);
+        return "책장이 성공적으로 삭제되었습니다.";
+    }
+    
+    //책장 이름 수정
+    @Transactional
+    public BookShelfDTO updateBookShelfName(Long bookshelfId, String newName) {
+        // 책장이 존재하는지 확인
+        BookShelf bookShelf = bookShelfRepository.findById(bookshelfId)
+                .orElseThrow(() -> new RuntimeException("책장이 존재하지 않습니다."));
+
+        // 책장 이름 변경
+        bookShelf.setBookshelfName(newName);
+
+        // 변경된 책장 저장
+        BookShelf updatedShelf = bookShelfRepository.save(bookShelf);
+
+        // 변경된 책장 정보를 DTO로 변환하여 반환
+        return new BookShelfDTO(updatedShelf.getBookshelfId(), updatedShelf.getBookshelfName(), null);
+    }
+
+//    @Transactional
+//    public List<BookResponse> getRecommendedBooksByCategory(Long bookshelfId) {
+//        // 책장에 있는 책들의 카테고리 ID 목록 가져오기
+//        List<Integer> categoryIds = getCategoryIdsFromBookshelf(bookshelfId);
+//
+//        System.out.println("[책장 ID]: " + bookshelfId);
+//        System.out.println("[책장에서 가져온 카테고리 ID 목록]: " + categoryIds);
+//
+//        List<BookResponse> recommendedBooks = new ArrayList<>();
+//        for (Integer categoryId : categoryIds) {
+//            // 각 카테고리 ID로 알라딘 API에서 도서 검색
+//            List<BookResponse> books = aladinService.searchBooksByCategory(categoryId);
+//            System.out.println("[카테고리 ID: " + categoryId + "] 검색된 도서 개수: " + books.size());
+//            recommendedBooks.addAll(books);
+//        }
+//
+//        // 평점이 높은 순으로 정렬
+//        recommendedBooks.sort(Comparator.comparing(BookResponse::getCustomerReviewRank).reversed());
+//
+//        System.out.println("[최종 추천 도서 개수]: " + recommendedBooks.size());
+//
+//        return recommendedBooks;
+//    }
+
+
+    //카테고리로 추천 받아오기
+    @Transactional
+    public List<BookResponse> getRecommendedBooksByCategory(Long bookshelfId) {
+        // 책장 내 도서 카테고리 ID 개수 집계
+        List<Integer> categoryIds = getCategoryIdsFromBookshelf(bookshelfId);
+
+        // 중복 카테고리 개수 집계
+        Map<Integer, Long> categoryCountMap = categoryIds.stream()
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+
+        System.out.println("[책장 ID]: " + bookshelfId);
+        System.out.println("[카테고리별 도서 개수]: " + categoryCountMap);
+
+        List<BookResponse> recommendedBooks = new ArrayList<>();
+        int defaultBooksPerCategory = 10; // 기본 10권
+
+        for (Map.Entry<Integer, Long> entry : categoryCountMap.entrySet()) {
+            Integer categoryId = entry.getKey();
+            Long count = entry.getValue();
+
+            // 해당 카테고리에서 가져올 책 개수 설정
+            int booksToFetch = defaultBooksPerCategory * count.intValue(); // 중복된 횟수만큼 곱하기
+
+            System.out.println("[카테고리 ID: " + categoryId + "] 가져올 책 개수: " + booksToFetch);
+
+            // 알라딘 API 호출
+            List<BookResponse> books = aladinService.searchBooksByCategory(categoryId, booksToFetch);
+            System.out.println("[카테고리 ID: " + categoryId + "] 검색된 도서 개수: " + books.size());
+            recommendedBooks.addAll(books);
+        }
+
+        System.out.println("[최종 추천 도서 개수]: " + recommendedBooks.size());
+
+        return recommendedBooks;
     }
 
 }
