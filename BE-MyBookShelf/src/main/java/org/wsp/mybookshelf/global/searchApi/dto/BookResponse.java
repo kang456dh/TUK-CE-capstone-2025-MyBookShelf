@@ -17,4 +17,6 @@ public class BookResponse {
     private Integer customerReviewRank;
     private String source;  // 데이터 출처
     private String description;
+    private Integer categoryID;
+    private String categoryName;
 }
