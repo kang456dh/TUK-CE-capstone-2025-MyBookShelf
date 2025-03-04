@@ -1,6 +1,8 @@
 package org.wsp.mybookshelf.global.searchApi.controller;
 
-
+import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
 import org.wsp.mybookshelf.global.searchApi.dto.BookResponse;
 import org.wsp.mybookshelf.global.searchApi.service.AladinService;
 import org.wsp.mybookshelf.global.searchApi.service.GoogleBooksService;
@@ -28,14 +30,21 @@ public class ApiController {
 
     // 알라딘 OpenAPI가 아닌 LibraryAPI 사용 (406 오류 해결)
     @GetMapping("/searchLibrary")
-    public Mono<ResponseEntity<Map<String, List<BookResponse>>>> searchBooks(
-            @RequestParam String query
-    ) {
+    public Mono<ResponseEntity<Map<@NotNull String, @NotNull List<BookResponse>>>> searchBooks() {
         return Mono.fromCallable(() -> {
-            List<BookResponse> books = libraryService.searchBooks(query); // ✅ static 제거
-            return ResponseEntity.ok(Map.of("books", books)); // ✅ ResponseEntity 사용 (JSON 명확화)
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Accept", "application/json");
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            List<BookResponse> topLoanBooks = libraryService.searchBooks();
+            //List<Map<String, String>> similarGenreBooks = libraryService.getSimilarGenreBooks(genre, entity);
+            return ResponseEntity.ok(Map.of(
+                    "topLoanBooks", topLoanBooks
+                    //"similarGenreBooks", similarGenreBooks
+            ));
         }).subscribeOn(Schedulers.boundedElastic());
     }
+
 
     // 알라딘 OpenAPI만 사용한 코드
     @GetMapping("/search")
@@ -53,21 +62,21 @@ public class ApiController {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    // 알라딘 + GoogleAPI 결합 검색 (비동기 방식)
-    @GetMapping("/search/all")
-    public Mono<ResponseEntity<Map<String, Object>>> searchAllBooks(@RequestParam String query) {
-        Mono<List<BookResponse>> libraryBooks = Mono.fromCallable(() -> libraryService.searchBooks(query))
-                .subscribeOn(Schedulers.boundedElastic());
-
-        Mono<List<BookResponse>> googleBooks = googleBooksService.searchBooks(query)
-                .subscribeOn(Schedulers.boundedElastic());
-
-        return Mono.zip(libraryBooks, googleBooks)
-                .map(tuple -> ResponseEntity.ok(Map.of(
-                        "libraryAPI", tuple.getT1(),
-                        "googleBooksAPI", tuple.getT2()
-                )));
-    }
+//    // 알라딘 + GoogleAPI 결합 검색 (비동기 방식)
+//    @GetMapping("/search/all")
+//    public Mono<ResponseEntity<Map<String, Object>>> searchAllBooks(@RequestParam String query) {
+//        Mono<List<BookResponse>> libraryBooks = Mono.fromCallable(() -> libraryService.searchBooks(query))
+//                .subscribeOn(Schedulers.boundedElastic());
+//
+//        Mono<List<BookResponse>> googleBooks = googleBooksService.searchBooks(query)
+//                .subscribeOn(Schedulers.boundedElastic());
+//
+//        return Mono.zip(libraryBooks, googleBooks)
+//                .map(tuple -> ResponseEntity.ok(Map.of(
+//                        "libraryAPI", tuple.getT1(),
+//                        "googleBooksAPI", tuple.getT2()
+//                )));
+//    }
 
     // 검색하여 상세 정보 리턴
     @GetMapping("/search/register")

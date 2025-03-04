@@ -34,10 +34,12 @@ public class AladinService {
                 book.setTitle((String) item.get("title"));
                 book.setAuthor((String) item.get("author"));
                 book.setPublisher((String) item.get("publisher"));
-                book.setGenre((String) item.get("categoryName")); // 장르 추가
                 book.setIsbn((String) item.get("isbn"));
                 book.setCover((String) item.get("cover"));
                 book.setPublicationDate((String) item.get("pubDate"));
+                book.setCategoryID((Integer) item.get("categoryId"));
+                book.setCategoryName(formatCategory((String) item.get("categoryName")));
+
                 book.setSource("Aladin API");
 
                 if (showDetail) {
@@ -50,7 +52,7 @@ public class AladinService {
         return books;
     }
 
-    public BookResponse searchBookDetail(String isbn13){
+    public BookResponse searchBookDetail(String isbn13) {
         String url = "https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?TTBKey=" + API_KEY +
                 "&Query=" + isbn13 +
                 "&SearchTarget=Book&Output=JS&Version=20131101";
@@ -66,14 +68,23 @@ public class AladinService {
             bookResponse.setIsbn((String) item.get("isbn"));
             bookResponse.setCover((String) item.get("cover"));
             bookResponse.setCustomerReviewRank((Integer) item.get("customerReviewRank"));
+
+            // ">"를 ", "로 변환하여 보기 좋게 가공
+            String rawCategoryName = (String) item.get("categoryName");
+            bookResponse.setCategoryName(formatCategory(rawCategoryName));
+
             bookResponse.setSource("Aladin API");
             return bookResponse;
         }
 
         return null;
     }
-<<<<<<< HEAD
+
+    // ">"를 ", "로 변환하는 유틸리티 메서드
+    private String formatCategory(String category) {
+        if (category != null) {
+            return category.replace(">", ", ");
+        }
+        return null;
+    }
 }
-=======
-}
->>>>>>> 506eabb72a7bed37e9969adf9d030302ccda794b
