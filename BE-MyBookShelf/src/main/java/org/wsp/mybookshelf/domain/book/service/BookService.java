@@ -26,7 +26,8 @@ public class BookService {
                     .cover(bookDTO.getCover())
                     .author(bookDTO.getAuthor())
                     .publisher(bookDTO.getPublisher())
-                    .genre(bookDTO.getGenre())
+                    .categoryId(bookDTO.getCategoryId())
+                    .categoryName(bookDTO.getCategoryName())
                     .description(bookDTO.getDescription())
                     .publicationDate(bookDTO.getPublicationDate()) // 출판일 추가
                     .customerReviewRank(bookDTO.getCustomerReviewRank()) // 고객 리뷰 순위 추가
