@@ -1,5 +1,6 @@
 package org.wsp.mybookshelf.domain.bookshelf.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -146,24 +147,27 @@ public class BookShelfService {
         return bookShelfRepository.save(bookShelf);
     }
 
-    //책장의 책 장르 정보 수집
-    @Transactional
-    public List<Integer> getCategoryIdsFromBookshelf(Long bookshelfId) {
-        // 책장 정보 조회
-        BookShelfDTO bookShelfDTO = getBookShelfById(bookshelfId);
-
-        // 책장에 있는 책들의 카테고리 ID 목록 추출
-        return bookShelfDTO.getBook().stream()
-                .map(BookDTO::getCategoryId)
-                .collect(Collectors.toList());
-    }
 
     //책장 삭제
+    @Transactional
     public String deleteBookShelf(Long bookshelfId) {
 
         // 책장 삭제
         bookShelfRepository.deleteById(bookshelfId);
         return "책장이 성공적으로 삭제되었습니다.";
+    }
+
+    @Transactional
+    public String deleteMappingBook(Long bookshelfId, Long bookId) {
+        // 1. bookshelfId와 bookId로 MappingBook 찾기
+        MappingBook mappingBook = mappingBookRepository.findByBookshelfIdAndBookId(bookshelfId, bookId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 도서가 책장에 없습니다."));
+
+        // 2. 찾은 mappingBook의 mappingId로 삭제
+        System.out.println("삭제할 매핑" + mappingBook);
+        mappingBookRepository.deleteByMappingId(mappingBook.getMappingId());
+
+        return "삭제 완료";
     }
     
     //책장 이름 수정
@@ -183,30 +187,25 @@ public class BookShelfService {
         return new BookShelfDTO(updatedShelf.getBookshelfId(), updatedShelf.getBookshelfName(), null);
     }
 
-//    @Transactional
-//    public List<BookResponse> getRecommendedBooksByCategory(Long bookshelfId) {
-//        // 책장에 있는 책들의 카테고리 ID 목록 가져오기
-//        List<Integer> categoryIds = getCategoryIdsFromBookshelf(bookshelfId);
-//
-//        System.out.println("[책장 ID]: " + bookshelfId);
-//        System.out.println("[책장에서 가져온 카테고리 ID 목록]: " + categoryIds);
-//
-//        List<BookResponse> recommendedBooks = new ArrayList<>();
-//        for (Integer categoryId : categoryIds) {
-//            // 각 카테고리 ID로 알라딘 API에서 도서 검색
-//            List<BookResponse> books = aladinService.searchBooksByCategory(categoryId);
-//            System.out.println("[카테고리 ID: " + categoryId + "] 검색된 도서 개수: " + books.size());
-//            recommendedBooks.addAll(books);
-//        }
-//
-//        // 평점이 높은 순으로 정렬
-//        recommendedBooks.sort(Comparator.comparing(BookResponse::getCustomerReviewRank).reversed());
-//
-//        System.out.println("[최종 추천 도서 개수]: " + recommendedBooks.size());
-//
-//        return recommendedBooks;
-//    }
+    @Transactional(readOnly = true)
+    public List<String> getIsbn(Long bookshelfId) {
+        // 책장 ID에 해당하는 도서의 ISBN 목록 조회
+        return mappingBookRepository.findByBookshelf_BookshelfId(bookshelfId).stream()
+                .map(mappingBook -> mappingBook.getBook().getIsbn()) // 도서의 ISBN 추출
+                .collect(Collectors.toList());
+    }
 
+    //책장의 책 장르 정보 수집
+    @Transactional
+    public List<Integer> getCategoryIdsFromBookshelf(Long bookshelfId) {
+        // 책장 정보 조회
+        BookShelfDTO bookShelfDTO = getBookShelfById(bookshelfId);
+
+        // 책장에 있는 책들의 카테고리 ID 목록 추출
+        return bookShelfDTO.getBook().stream()
+                .map(BookDTO::getCategoryId)
+                .collect(Collectors.toList());
+    }
 
     //카테고리로 추천 받아오기
     @Transactional

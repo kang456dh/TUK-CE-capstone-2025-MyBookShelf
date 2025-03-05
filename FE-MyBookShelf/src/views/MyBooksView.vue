@@ -36,10 +36,15 @@
           :key="index" class="book-placeholder" @contextmenu.prevent="showContextMenu($event, book)">
           <div v-if="book.cover" class="bookshelfbook-cover">
             <img :src="book.cover || 'default-cover.jpg'" alt="책 표지" />
+          </div>
+          <div class="bookshelf-info">
+            <div class="bookshelf-title">{{ truncateTitleBeforeSpecialChar(book.title) }}</div>
+            <div class="bookshelf-author">{{ book.author.length > 20 ? book.author.slice(0, 20) + '...' : book.author }}</div>
             <button v-if="isEditing" @click="removeBook(book)" class="remove-book-button">-</button>
           </div>
         </div>
       </div>
+
       <!-- 컨텍스트 메뉴 -->
       <div v-if="contextMenuVisible" class="context-menu" :style="{ top: `${contextMenuY}px`, left: `${contextMenuX}px` }">
         <button @click="viewBookInfo()">책 정보</button>
@@ -73,11 +78,41 @@
       </div>
     </div>
 
+    <!-- 추가 평점 모달 -->
+    <div v-if="isAdditionalRatingModalOpen" class="additional-rating-modal">
+      <div class="additional-rating-modal-content">
+        <div class="additional-rating-header">도서 추천 결과</div>
+        <div class="rating-list">
+          <div class="rating-item" v-for="book in recommendations" :key="book.isbn">
+            <div class="rating-cover">
+              <img :src="book.cover" alt="책 표지" />
+            </div>
+            <div class="rating-info">
+              <div class="rating-title">{{ book.title }}</div>
+              <div class="rating-author">저자: {{ book.author.length > 10 ? book.author.slice(0, 10) + '...' : book.author }}</div>
+              <div class="rating-category">카테고리: {{ book.categoryName }}</div>
+              <div class="rating-score">가중평점: {{ book.weightedRatingScore.toFixed(2) }}</div>
+            </div>
+          </div>
+        </div>
+        <button @click="closeAdditionalRatingModal" class="close-rating-modal-button">닫기</button>
+      </div>
+    </div>
+    <!-- 확인 모달 -->
+    <div v-if="showConfirmModal" class="confirm-modal">
+      <div class="confirm-modal-content">
+        <p>'{{ selectedBook.title }}' 을 저장하시겠습니까?</p>
+        <div class="confirm-modal-button-container">
+          <button @click="confirmAddBook">예</button>
+          <button @click="cancelAddBook">아니요</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 사이드바 -->
     <div v-if="isSidebarOpen" class="sidebar">
       <div class="sidebar-content">
         <button class="close-button" @click="closeSidebar">✖</button>
-        <h3>책 등록</h3>
         <div class="registration-options">
           <button @click="setRegisterType('manual')" :class="{ active: registerType === 'manual' }">직접 등록</button>
           <button @click="setRegisterType('isbn')" :class="{ active: registerType === 'isbn' }">ISBN 등록</button>
@@ -86,14 +121,12 @@
 
         <!-- 직접 등록 폼 -->
         <div v-if="registerType === 'manual'" class="manual-form">
-          <label for="title">책 제목</label>
           <input type="text" id="title" v-model="manualTitle" placeholder="책 제목 입력" />
           <button @click="searchManual">검색</button>
         </div>
 
         <!-- ISBN 등록 폼 -->
         <div v-if="registerType === 'isbn'" class="isbn-form">
-          <label for="isbn">ISBN</label>
           <input type="text" id="isbn" v-model="isbn" placeholder="ISBN 입력" />
           <button @click="searchISBN">검색</button>
         </div>
@@ -110,15 +143,15 @@
           <ul>
             <li v-for="(book, index) in paginatedResults" :key="index">
               <div class="search-book-item">
-                <div class="book-cover">
+                <div class="sidebook-cover">
                   <img :src="book.cover" alt="책 표지" />
                 </div>
-                <div class="book-info">
-                  <p class="book-title" :title="book.title">
+                <div class="sidebook-info">
+                  <p class="sidebook-title" :title="book.title">
                     {{ book.title.length > 25 ? book.title.slice(0, 25) + '...' : book.title }}
                   </p>
-                  <p class="book-author">{{ book.author }}</p>
-                  <button @click="selectBook(book)" class="select-book-button">선택</button>
+                  <p class="sidebook-author">{{ book.author }}</p>
+                  <button @click="selectBook(book)" class="sideselect-book-button">선택</button>
                 </div>
               </div>
             </li>
@@ -168,6 +201,7 @@ export default {
       isbn: "",
       isAddBookshelfModalOpen: false, // 책장 추가 모달 열기 여부
       isRecommendationModalOpen: false, // 추천받기 모달 열기 여부
+      isAdditionalRatingModalOpen: false,
       recommendationType: "", // 추천 타입
       searchResults: [], // 검색된 책 정보
       books: [], // 책 배열 초기화
@@ -179,8 +213,11 @@ export default {
       contextMenuX: 0, // 컨텍스트 메뉴 X 좌표
       contextMenuY: 0, // 컨텍스트 메뉴 Y 좌표
       selectedBook: null, // 선택된 책
+      recommendations: [], // 추천받은 책 목록
+      isBooksModalOpen: false, // 책 추천 결과 모달 상태
     };
   },
+
   created() {
     this.fetchBookshelves();
   },
@@ -214,6 +251,18 @@ export default {
   },
 
   methods: {
+    closeBooksModal() {
+      this.isBooksModalOpen = false; // 책 추천 결과 모달 닫기
+    },
+    
+    truncateTitleBeforeSpecialChar(title) {
+    // 특정 특수 기호가 나타나는 위치를 찾음
+    const index = title.search(/[-:/]/); // '-', ':', '/' 중 첫 번째 문자의 인덱스
+
+    // 특수 기호가 없으면 전체 제목을 반환하고, 있으면 그 이전까지 반환
+    return index === -1 ? title : title.slice(0, index);
+    },
+
     // 오른쪽 클릭 시 컨텍스트 메뉴 표시
     showContextMenu(event, book) {
       this.selectedBook = book; // 선택된 책 저장
@@ -374,22 +423,41 @@ export default {
       this.isRecommendationModalOpen = false;
     },
 
+    closeAdditionalRatingModal(){
+      this.isAdditionalRatingModalOpen = false;
+    },
+
     setRecommendationType(type) {
       this.recommendationType = type;
     },
 
     async fetchRecommendations() {
-      // 추천받기 로직을 여기에 구현
-      // 예: API 호출 후 추천받은 책 목록을 표시
-      alert(`추천받은 책 ${this.recommendationType}에 따라 책을 추천받았습니다.`);
-      // 추천받은 책을 books 배열에 추가할 수 있습니다.
-      this.closeRecommendationModal(); // 모달 닫기
+      try {
+        const response = await axios.get(`/api/recommend/rating/${this.selectedBookshelf}`);
+        
+        // 서버 응답에서 result 배열을 recommendations에 저장
+        if (response.data.isSuccess) {
+          this.recommendations = response.data.result; // API에서 받은 책 목록 저장
+          this.isAdditionalRatingModalOpen = true; // 추가 평점 모달 열기
+          this.closeRecommendationModal(); // 추천받기 모달 닫기
+        } else {
+          console.error("추천받기 실패:", response.data.message);
+          alert("추천받기 실패: " + response.data.message);
+        }
+      } catch (error) {
+        console.error("추천받기 오류:", error);
+      }
     },
 
     // 검색된 책을 책장에 넣는 작업
     async selectBook(book) {
       this.selectedBook = book; // 선택한 책 정보를 저장
       this.showConfirmModal = true; // 모달 표시
+    },
+
+    async selectRating(book) {
+      this.selectedRating = book;
+      this.showConfirmModal = true;
     },
 
     confirmAddBook() {
@@ -516,11 +584,12 @@ export default {
     },
 
     // 책 삭제 메서드
-    removeBook(book) {
+    async removeBook(book) {
       if (confirm(`'${book.title}' 책을 삭제하시겠습니까?`)) {
-        axios.delete(`/api/bookshelf/${this.currentBookshelf}/delete`, {
-          params: { isbn: book.isbn } // ISBN을 통해 책 삭제
-        }).then(response => {
+        try {
+          const response = await axios.delete(`/api/bookshelf/delete/book/${this.selectedBookshelf}/${book.bookId}`, {
+          });
+
           if (response.data.isSuccess) {
             alert(`${book.title}이(가) 삭제되었습니다.`);
             // 책장 목록 업데이트
@@ -528,9 +597,9 @@ export default {
           } else {
             alert("책 삭제 실패: " + response.data.message);
           }
-        }).catch(error => {
+        } catch (error) {
           console.error("책 삭제 중 오류 발생:", error);
-        });
+        }
       }
     },
   }
@@ -648,13 +717,10 @@ export default {
 /* ---------- 네모난 책장 폼 ---------- */
 /* --------------------------------- */
 .bookshelf {
-  /* background-image: url('/src/assets/bookshelf.jpg');
-  background-size: contain;
-  background-position: center; */
   padding: 20px;
   border: 7px solid #ddd;
   border-radius: 8px;
-  width: 900px;
+  width: 1500px;
   height: auto;
   position: relative; /* 자식 요소의 절대 위치 지정 가능 */
 }
@@ -671,29 +737,48 @@ export default {
 /* 책 플레이스홀더 */
 .book-placeholder {
   width: 100%; /* 너비를 100%로 설정하여 그리드에 맞게 조정 */
+  height: auto;
   background-color: #e9ecef;
   border: 1px solid #ddd;
   border-radius: 8px;
   position: relative;
   display: flex;
-  justify-content: center; /* 가로 중앙 정렬 */
+  flex-direction: column; /* 세로로 정렬 */
+  justify-content: center; /* 세로 중앙 정렬 */
+  /* justify-content: center; */
   align-items: center; /* 세로 중앙 정렬 */
   overflow: hidden; /* 자식 요소가 넘칠 경우 숨기기 */
 }
 
 /* 책장 책 표지 */
 .bookshelfbook-cover {
-  width: 100%; 
-  height: 100%; 
+  margin-top: 10px;
+  width: 240px; 
+  height: 310px;
+  /* height: 100%; */
   display: flex; /* 플렉스 박스 사용 */
   justify-content: center; /* 가로 중앙 정렬 */
   align-items: center; /* 세로 중앙 정렬 */
 }
 .bookshelfbook-cover img {
-  width: 90%;
+  width: 85%;
   height: auto;
   object-fit: cover; /* 비율을 유지하면서 요소를 가득 채우기 */
   border-radius: 8px; /* 모서리 둥글게 처리 (선택 사항) */
+}
+/* 책 정보 스타일 */
+.bookshelf-info {
+  text-align: center; /* 중앙 정렬 */
+  padding: 10px 0; /* 위아래 여백 추가 */
+  margin-top: 10px;
+}
+
+.bookshelf-title {
+  font-weight: bold; /* 제목을 굵게 */
+}
+
+.bookshelf-author, .bookshelf-category {
+  font-size: 0.9em; /* 글자 크기를 약간 작게 */
 }
 
 /* 책 제거 버튼 */
@@ -807,6 +892,110 @@ export default {
   cursor: pointer;
 }
 
+/* ---------- 추가 평점 모달 ---------- */
+.additional-rating-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  z-index: 1002; /* 사이드바보다 위에 표시 */
+}
+
+.additional-rating-modal-content {
+  background-color: rgb(168, 211, 255);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.2);
+}
+
+.additional-rating-header {
+  font-size: 18px; /* 헤더 크기 */
+  font-weight: bold;
+  margin-bottom: 15px; /* 아래쪽 여백 */
+}
+
+.rating-list {
+  display: flex;
+  flex-direction: column; /* 세로 방향 정렬 */
+  gap: 10px; /* 항목 간의 간격 */
+}
+
+.rating-item {
+  display: flex; /* 가로 방향 정렬 */
+  align-items: center; /* 수직 정렬 */
+  gap: 10px; /* 책 표지와 정보 간의 간격 */
+  border: 1px solid #ddd; /* 테두리 */
+  padding: 10px; /* 내부 여백 */
+  border-radius: 5px; /* 모서리 둥글게 */
+  background-color: #f9f9f9; /* 배경색 */
+}
+
+.rating-cover {
+  width: 50px; /* 책 표지 너비 */
+  height: auto; /* 자동 높이 */
+}
+
+.rating-info {
+  flex-grow: 1; /* 남은 공간을 차지 */
+  margin-left: 40px; /* 표지와의 간격 조정 */
+}
+
+.rating-title {
+  font-weight: bold; /* 제목 두껍게 */
+  font-size: 17px; /* 제목 크기 */
+  margin-bottom: 7px;
+}
+
+.rating-author {
+  font-size: 12px; /* 저자 크기 */
+  color: gray; /* 저자 색상 */
+  margin-bottom: 5px;
+
+}
+
+.rating-category {
+  font-size: 12px;
+  color: #28a745;
+  margin-bottom: 5px;
+
+}
+
+.rating-score {
+  font-size: 15px; /* 평점 크기 */
+  color: #007bff; /* 평점 색상 */
+}
+
+.select-rating-button {
+  padding: 5px 10px;
+  background-color: #007bff; /* 선택 버튼 색상 */
+  color: white; /* 글자 색상 */
+  border: none; /* 테두리 제거 */
+  border-radius: 4px; /* 모서리 둥글게 */
+  cursor: pointer; /* 커서 변경 */
+}
+
+.select-rating-button:hover {
+  background-color: #0056b3; /* 호버 시 색상 변경 */
+}
+
+/* 모달 닫기 버튼 */
+.close-rating-modal-button {
+  margin-top: 15px; /* 위쪽 마진 */
+  padding: 8px;
+  background-color: #dc3545; /* 닫기 버튼 색상 */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+
+
 /* ---------- 사이드바 ---------- */
 /* ---------------------------- */
 .sidebar {
@@ -885,27 +1074,90 @@ export default {
   background-color: #1976d2;
 }
 
-/* 검색된 책들 */
+/* 사이드바 검색된 책들 */
 .search-results ul {
-  display: grid;
+  display: grid; /* 그리드 레이아웃 사용 */
   grid-template-columns: repeat(2, 1fr); /* 2개씩 배치 */
-  gap: 10px;
+  gap: 10px; /* 항목 간의 간격 */
+  padding: 0; /* 기본 패딩 제거 */
+  list-style-type: none; /* 리스트 스타일 제거 */
 }
+
 .search-book-item {
-  display: flex;
-  /*align-items: stretch; */
-  align-items: flex-start;
-  gap: 10px;
-  border: 1px solid #ddd;
-  padding: 10px;
-  background: white;
-  border-radius: 5px;
+  display: flex; /* 가로 정렬 */
+  align-items: center; /* 수직 정렬 */
+  gap: 10px; /* 표지와 정보 사이 여백 */
+  border: 1px solid #ddd; /* 테두리 */
+  padding: 10px; /* 내부 여백 */
+  background: white; /* 배경색 */
+  border-radius: 5px; /* 모서리 둥글게 */
 }
+
+/* 왼쪽: 책 표지 */
+.sidebook-cover {
+  flex-shrink: 0; /* 크기 고정 */
+  width: 140px; /* 표지 너비 */
+  height: 160px; /* 표지 높이 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebook-cover img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+/* 오른쪽: 제목, 저자, 버튼 */
+.sidebook-info {
+  display: flex;
+  flex-direction: column; /* 세로 정렬 */
+  flex-grow: 1; /* 남은 공간 차지 */
+  justify-content: center;
+  gap: 4px; /* 요소 간 간격 */
+}
+
+.sidebook-title {
+  font-weight: bold;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px; /* 제목 최대 너비 */
+}
+
+.sidebook-author {
+  font-size: 12px;
+  color: gray;
+}
+
+/* 선택 버튼 */
+.sideselect-book-button {
+  align-self: flex-start; /* 왼쪽 정렬 */
+  padding: 4px 8px;
+  font-size: 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sideselect-book-button:hover {
+  background-color: #0056b3;
+}
+
+
+
+
 /* 사이드바 결과 책 표지 */
 .book-cover {
   display: flex;
   align-items: stretch;
-  width: 100px;
+  width: 50px;
+  height: auto;
   flex-shrink: 0; /* 표지 크기 고정 */
 }
 .book-info {
