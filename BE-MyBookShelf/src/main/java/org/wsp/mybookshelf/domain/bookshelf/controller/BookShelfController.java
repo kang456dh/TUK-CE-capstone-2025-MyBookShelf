@@ -102,8 +102,15 @@ public class BookShelfController {
         return ResponseEntity.ok(ApiResponse.onSuccess(responseMessage));
     }
 
+    //책장에서 도서 삭제
+    @DeleteMapping("/delete/book/{bookshelfId}/{bookId}")
+    public ResponseEntity<ApiResponse<String>> deleteBook(@PathVariable Long bookshelfId, @PathVariable Long bookId) {
+        String responseMessage = bookShelfService.deleteMappingBook(bookshelfId, bookId);
+        System.out.println("도서 삭제 API");
+        return ResponseEntity.ok(ApiResponse.onSuccess(responseMessage));
+    }
 
-    // 책장 이름 수정
+        // 책장 이름 수정
     @PatchMapping("/edit")
     public ResponseEntity<ApiResponse<BookShelfDTO>> renameBookshelf(
             @RequestBody BookShelfDTO.UpdateBookShelfDTO updateBookShelfDTO) {
