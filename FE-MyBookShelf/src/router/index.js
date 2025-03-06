@@ -10,6 +10,7 @@ const routes = [
     component: LayoutView, // 공통 레이아웃 사용
     children: [
       { path: '', name: 'Home', component: HomeView },
+      { path: 'search', name: 'SearchView', component: () => import('@/views/SearchView.vue') },
       { path: 'category', name: 'Category', component: () => import('../views/CategoryView.vue') },
       { path: 'community', name: 'Community', component: () => import('../views/CommunityView.vue') },
       { path: 'guidelines', name: 'Guidelines', component: () => import('../views/GuidelinesView.vue') },

@@ -1,52 +1,77 @@
 <template>
-    <div class="form-container">
-    <!-- 뒤로가기 버튼 추가 -->
+  <div class="form-container">
     <button @click="goBack" class="back-button">◁</button>
-
-      <h2>로그인</h2>
-      <form>
-        <div class="form-group">
-          <label for="email">이메일</label>
-          <input type="email" id="email" placeholder="이메일 입력" />
-        </div>
-        <div class="form-group">
-          <label for="password">비밀번호</label>
-          <input type="password" id="password" placeholder="비밀번호 입력" />
-        </div>
-        <button type="submit" class="login-button">로그인</button>
-        
-        <!-- 구분선 아래에 레이블 및 회원가입 버튼 -->
-        <div class="separator">
-          <hr />
-        </div>
-        <p class="signup-label">계정이 없으신가요?</p>
-        <button @click="goToSignup" class="signup-button">회원가입</button>
-      </form>
-    </div>
-  </template>
+    <h2>로그인</h2>
+    <form @submit.prevent="handleLogin">
+      <div class="form-group">
+        <label for="email">이메일</label>
+        <input type="email" id="email" v-model="email" placeholder="이메일 입력" />
+      </div>
+      <div class="form-group">
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" v-model="password" placeholder="비밀번호 입력" />
+      </div>
+      <button type="submit" class="login-button">로그인</button>
+      <div class="separator">
+        <hr />
+      </div>
+      <p class="signup-label">계정이 없으신가요?</p>
+      <button @click="goToSignup" class="signup-button">회원가입</button>
+    </form>
+  </div>
+</template>
 
 <script>
+import axios from 'axios';
+
 export default {
   name: 'LoginView',
   data() {
     return {
       email: '',
       password: '',
+      errorMessage: '',
     };
   },
   methods: {
-    handleLogin() {
-      console.log('로그인 시도:', { email: this.email, password: this.password });
+    async handleLogin() {
+      try {
+        const response = await axios.post('/api/user/login', {
+          email: this.email,
+          password: this.password,
+        });
+
+        if (response.data.isSuccess) {
+          alert('로그인 성공!');
+          // ✅ localStorage에 로그인 정보 저장
+          localStorage.setItem('user', JSON.stringify(response.data.result));
+
+          // ✅ 모든 탭에서 로그인 상태 반영
+          window.dispatchEvent(new Event('storage'));
+
+          // ✅ 로그인 후 상태 업데이트 (상위 컴포넌트 반영)
+          this.$emit('login-success');
+
+          // ✅ 로그인 성공 후 홈으로 이동
+          this.$router.push('/');
+        } else {
+          this.errorMessage = response.data.message;
+        }
+      } catch (error) {
+        this.errorMessage = '서버 오류가 발생했습니다.';
+      }
     },
     goToSignup() {
-      this.$router.push('/signup'); // 회원가입 화면으로 이동
+      this.$router.push('/signup');
     },
     goBack() {
-        this.$router.push('/'); // HomeView로 이동
-    }
+      this.$router.push('/');
+    },
   },
 };
 </script>
+
+
   
 <style scoped>
   .form-container {
@@ -132,4 +157,3 @@ export default {
     color: #fff;
   }
   </style>
-  

@@ -61,11 +61,17 @@ public class UserService {
 
         // 사용자 정보 응답 DTO로 변환
         return UserResponseDTO.builder()
-                .id(user.getUserId())
+                .userId(user.getUserId())
                 .email(user.getEmail())
                 .realname(user.getRealName())
                 .nickname(user.getNickName())
                 .build();
+    }
+
+    // 사용자 ID로 정보 가져오기
+    public User findUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
     }
 
     // 이메일 중복 검사
