@@ -48,11 +48,13 @@ dependencies {
 
 	// JSON 처리 (Jackson 포함)
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	implementation 'org.json:json:20231013'
 
 	// 테스트 (JUnit 5)
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
 	implementation 'org.jetbrains:annotations:24.0.0'
+	implementation 'org.apache.poi:poi-ooxml:5.2.3'
 }
 
 tasks.named('test') {
