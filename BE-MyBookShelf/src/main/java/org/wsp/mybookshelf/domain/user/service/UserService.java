@@ -11,6 +11,8 @@ import org.wsp.mybookshelf.domain.user.repository.UserRepository;
 import org.wsp.mybookshelf.global.commonEntity.enums.Status;
 
 import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -107,6 +109,19 @@ public class UserService {
         User user = userRepository.findByEmailAndBirthDate(email, birthDate)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
         // 추가적인 검증 로직 (예: 인증 코드 생성 등)
+    }
+
+    public int getUserAge(String birthDateString) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate birthDate = LocalDate.parse(birthDateString, formatter);
+
+        LocalDate currentDate = LocalDate.now();
+
+        if ((birthDate != null) && (currentDate != null)) {
+            return Period.between(birthDate, currentDate).getYears();
+        }
+        else
+            return 0;
     }
 
     // 비밀번호 변경
